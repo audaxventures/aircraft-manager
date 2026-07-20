@@ -9,7 +9,7 @@ interface LinkTabsProps {
 
 function LinkTabs({ items, className }: LinkTabsProps) {
   return (
-    <div className={cn("inline-flex h-9 w-fit items-center rounded-md bg-muted p-1 text-muted-foreground", className)}>
+    <div className={cn("inline-flex h-9 w-fit max-w-full items-center overflow-x-auto rounded-md bg-muted p-1 text-muted-foreground", className)}>
       {items.map((item) => (
         <Link
           key={item.href}

@@ -5,6 +5,10 @@ import bcrypt from "bcryptjs";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  // Vercel (and most reverse-proxy hosts) terminate TLS in front of the app
+  // and forward the real host via headers — without this, Auth.js rejects
+  // every request in production as an "untrusted host".
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
