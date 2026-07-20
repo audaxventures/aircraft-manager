@@ -1,0 +1,160 @@
+// Prisma schema for the C-FPFX Aircraft Manager
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// A single aircraft record today, but modeled as a table (not hardcoded)
+// so a second tail number can be added later without a schema rebuild.
+model Aircraft {
+  id                String   @id @default(cuid())
+  tailNumber        String   @unique
+  type              String
+  baseAirport       String
+  fiscalYearStartMonth Int   @default(1) // 1-12
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum CostType {
+  FIXED
+  DIRECT
+}
+
+model CostCategory {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  type       CostType
+  sortOrder  Int        @default(0)
+  archived   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  entries    CostEntry[]
+}
+
+model CostEntry {
+  id          String       @id @default(cuid())
+  date        DateTime
+  categoryId  String
+  category    CostCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  vendor      String?
+  invoiceNumber String?
+  amount      Decimal      @db.Decimal(12, 2)
+  notes       String?
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([date])
+  @@index([categoryId])
+}
+
+model Pilot {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  archived     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  trips        Trip[]
+  dutyDayLogs  DutyDayLog[]
+}
+
+model Passenger {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  createdAt DateTime        @default(now())
+  trips     TripPassenger[]
+}
+
+model Trip {
+  id                String          @id @default(cuid())
+  date              DateTime
+  departureAirport  String
+  arrivalAirport    String
+  routeLabel        String?
+  hours             Decimal         @db.Decimal(6, 2)
+  cycles            Int             @default(1)
+  miles             Int             @default(0)
+  purpose           String?
+  notes             String?
+  pilotId           String?
+  pilot             Pilot?          @relation(fields: [pilotId], references: [id], onDelete: SetNull)
+  dayTakeoffs       Int             @default(0)
+  dayLandings       Int             @default(0)
+  nightTakeoffs     Int             @default(0)
+  nightLandings     Int             @default(0)
+  passengers        TripPassenger[]
+  attachments       Attachment[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([date])
+  @@index([pilotId])
+}
+
+model TripPassenger {
+  tripId      String
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  passengerId String
+  passenger   Passenger @relation(fields: [passengerId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, passengerId])
+  @@index([passengerId])
+}
+
+model DutyDayLog {
+  id                      String   @id @default(cuid())
+  pilotId                 String
+  pilot                   Pilot    @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+  date                    DateTime
+  reportTime              DateTime
+  dutyEndTime             DateTime
+  restPeriodBeforeHours   Decimal  @db.Decimal(6, 2)
+  splitDutyApplied        Boolean  @default(false)
+  splitDutyNote           String?
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([pilotId, date])
+  @@unique([pilotId, date])
+}
+
+model Attachment {
+  id          String     @id @default(cuid())
+  filename    String
+  url         String
+  size        Int
+  mimeType    String
+  costEntryId String?
+  costEntry   CostEntry? @relation(fields: [costEntryId], references: [id], onDelete: Cascade)
+  tripId      String?
+  trip        Trip?      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+}
+
+// Singleton row holding the configurable CARS 604 / CAR 401.05(2) thresholds,
+// so regulatory figures aren't hardcoded and can be updated if rules change.
+model RegulatorySettings {
+  id                            String   @id @default(cuid())
+  // CARS 604 duty day limits
+  maxFlightDutyHours            Decimal  @default(14) @db.Decimal(4, 2)
+  extendedMaxFlightDutyHours    Decimal  @default(15) @db.Decimal(4, 2)
+  rolling30DayFlightHoursLimit  Decimal  @default(70) @db.Decimal(5, 2)
+  extensionRestPeriodHours      Decimal  @default(24) @db.Decimal(4, 2)
+  minRestPeriodHours            Decimal  @default(36) @db.Decimal(4, 2)
+  restPeriodWindowDays          Int      @default(7)
+  splitDutyMaxExtensionHours    Decimal  @default(4) @db.Decimal(4, 2)
+  splitDutyMinRestHours         Decimal  @default(4) @db.Decimal(4, 2)
+  // CAR 401.05(2) recency
+  currencyTakeoffsRequired      Int      @default(5)
+  currencyLandingsRequired      Int      @default(5)
+  currencyPeriodMonths          Int      @default(6)
+  updatedAt                     DateTime @updatedAt
+}
