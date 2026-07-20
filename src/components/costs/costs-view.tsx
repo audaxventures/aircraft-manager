@@ -2,13 +2,26 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Download, Plus, Receipt } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet, FileText, Plus, Receipt } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { CostEntryForm, type CostCategoryOption, type CostEntryFormValue } from "@/components/costs/cost-entry-form";
+import {
+  CostEntryForm,
+  type CostCategoryOption,
+  type CostEntryFormValue,
+  type VendorOption,
+} from "@/components/costs/cost-entry-form";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import type { CostEntryDto } from "@/lib/costs";
@@ -16,9 +29,11 @@ import type { CostEntryDto } from "@/lib/costs";
 interface CostsViewProps {
   entries: CostEntryDto[];
   categories: CostCategoryOption[];
+  vendors: VendorOption[];
+  exportFilters: { from?: string; to?: string; vendorId?: string };
 }
 
-function CostsView({ entries, categories }: CostsViewProps) {
+function CostsView({ entries, categories, vendors, exportFilters }: CostsViewProps) {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<CostEntryFormValue | null>(null);
 
@@ -32,9 +47,10 @@ function CostsView({ entries, categories }: CostsViewProps) {
       id: entry.id,
       date: entry.date.toISOString().slice(0, 10),
       categoryId: entry.categoryId,
-      vendor: entry.vendor ?? "",
+      vendorId: entry.vendorId ?? "",
       invoiceNumber: entry.invoiceNumber ?? "",
       amount: String(entry.amount),
+      currency: entry.currency,
       notes: entry.notes ?? "",
       attachments: [],
     });
@@ -46,12 +62,21 @@ function CostsView({ entries, categories }: CostsViewProps) {
       { header: "Date", accessor: (e) => formatDate(e.date) },
       { header: "Category", accessor: (e) => e.categoryName },
       { header: "Type", accessor: (e) => (e.categoryType === "FIXED" ? "Fixed" : "Direct") },
-      { header: "Vendor", accessor: (e) => e.vendor },
+      { header: "Vendor", accessor: (e) => e.vendorName },
       { header: "Invoice #", accessor: (e) => e.invoiceNumber },
+      { header: "Currency", accessor: (e) => e.currency },
       { header: "Amount", accessor: (e) => e.amount.toFixed(2) },
       { header: "Notes", accessor: (e) => e.notes },
     ]);
     downloadCsv(`cost-entries-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
+  function exportUrl(kind: "pdf" | "xlsx", type: "FIXED" | "DIRECT") {
+    const params = new URLSearchParams({ type });
+    if (exportFilters.from) params.set("from", exportFilters.from);
+    if (exportFilters.to) params.set("to", exportFilters.to);
+    if (exportFilters.vendorId) params.set("vendor", exportFilters.vendorId);
+    return `/api/reports/costs/${kind}?${params.toString()}`;
   }
 
   const columns: ColumnDef<CostEntryDto>[] = [
@@ -73,12 +98,17 @@ function CostsView({ entries, categories }: CostsViewProps) {
         </div>
       ),
     },
-    { accessorKey: "vendor", header: "Vendor", cell: ({ row }) => row.original.vendor || "—" },
+    { accessorKey: "vendorName", header: "Vendor", cell: ({ row }) => row.original.vendorName || "—" },
     { accessorKey: "invoiceNumber", header: "Invoice #", cell: ({ row }) => row.original.invoiceNumber || "—" },
     {
       accessorKey: "amount",
       header: () => <div className="w-full text-right">Amount</div>,
-      cell: ({ row }) => <div className="text-right tabular-nums">{formatCurrency(row.original.amount)}</div>,
+      cell: ({ row }) => (
+        <div className="text-right tabular-nums">
+          {formatCurrency(row.original.amount)}{" "}
+          <span className="text-xs text-muted-foreground">{row.original.currency}</span>
+        </div>
+      ),
     },
   ];
 
@@ -88,6 +118,38 @@ function CostsView({ entries, categories }: CostsViewProps) {
         <Button variant="outline" size="sm" onClick={exportCsv} disabled={entries.length === 0}>
           <Download /> Export CSV
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <FileText /> Fixed / Direct exports <ChevronDown className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Fixed costs</DropdownMenuLabel>
+            <DropdownMenuItem asChild>
+              <a href={exportUrl("xlsx", "FIXED")}>
+                <FileSpreadsheet /> Export XLSX
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={exportUrl("pdf", "FIXED")}>
+                <FileText /> Export PDF
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Direct / operating costs</DropdownMenuLabel>
+            <DropdownMenuItem asChild>
+              <a href={exportUrl("xlsx", "DIRECT")}>
+                <FileSpreadsheet /> Export XLSX
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={exportUrl("pdf", "DIRECT")}>
+                <FileText /> Export PDF
+              </a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button size="sm" onClick={openNew}>
           <Plus /> Add cost
         </Button>
@@ -112,7 +174,7 @@ function CostsView({ entries, categories }: CostsViewProps) {
         }
       />
 
-      <CostEntryForm open={formOpen} onOpenChange={setFormOpen} categories={categories} initial={editing} />
+      <CostEntryForm open={formOpen} onOpenChange={setFormOpen} categories={categories} vendors={vendors} initial={editing} />
     </div>
   );
 }

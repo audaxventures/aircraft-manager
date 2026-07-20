@@ -6,6 +6,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PRESETS = [
   { key: "mtd", label: "This month" },
@@ -13,7 +14,11 @@ const PRESETS = [
   { key: "all", label: "All time" },
 ] as const;
 
-function CostFilters() {
+interface CostFiltersProps {
+  vendors?: { id: string; name: string }[];
+}
+
+function CostFilters({ vendors = [] }: CostFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -22,6 +27,7 @@ function CostFilters() {
   const type = searchParams.get("type") ?? "all";
   const from = searchParams.get("from") ?? "";
   const to = searchParams.get("to") ?? "";
+  const vendorId = searchParams.get("vendor") ?? "all";
 
   function updateParams(next: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -43,6 +49,21 @@ function CostFilters() {
       </Tabs>
 
       <div className="flex flex-wrap items-center gap-2">
+        {vendors.length > 0 && (
+          <Select value={vendorId} onValueChange={(v) => updateParams({ vendor: v === "all" ? null : v })}>
+            <SelectTrigger className="h-8 w-40" aria-label="Vendor">
+              <SelectValue placeholder="All vendors" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All vendors</SelectItem>
+              {vendors.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <div className="flex items-center rounded-md border bg-card p-0.5">
           {PRESETS.map((p) => (
             <Button

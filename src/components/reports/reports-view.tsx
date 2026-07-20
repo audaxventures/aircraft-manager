@@ -7,15 +7,18 @@ import { MonthlySummaryGrid } from "@/components/reports/monthly-summary-grid";
 import { MonthlyTrendChart, type MonthlyTrendPoint } from "@/components/reports/monthly-trend-chart";
 import { CategoryBreakdown } from "@/components/reports/category-breakdown";
 import { toCsv, downloadCsv } from "@/lib/csv";
-import type { MonthlyGrid } from "@/lib/costs";
+import type { Currency, MonthlyGrid } from "@/lib/costs";
 
 interface ReportsViewProps {
   year: number;
   grid: MonthlyGrid;
+  currency: Currency;
+  vendorId?: string;
 }
 
-function ReportsView({ year, grid }: ReportsViewProps) {
+function ReportsView({ year, grid, currency, vendorId }: ReportsViewProps) {
   const trendData: MonthlyTrendPoint[] = grid.rows.map((r) => ({ month: r.monthLabel, fixed: r.fixedTotal, direct: r.directTotal }));
+  const pdfParams = new URLSearchParams({ year: String(year), currency, ...(vendorId ? { vendor: vendorId } : {}) });
 
   function exportCsv() {
     const rows = [...grid.rows, grid.yearTotal];
@@ -31,20 +34,22 @@ function ReportsView({ year, grid }: ReportsViewProps) {
       { header: "Direct total", accessor: (r) => r.directTotal.toFixed(2) },
       { header: "Total", accessor: (r) => r.total.toFixed(2) },
     ]);
-    downloadCsv(`monthly-cost-summary-${year}.csv`, csv);
+    downloadCsv(`monthly-cost-summary-${year}-${currency}.csv`, csv);
   }
 
   return (
     <div className="space-y-8">
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-foreground">Monthly summary — {year}</h2>
+          <h2 className="text-sm font-medium text-foreground">
+            Monthly summary — {year} <span className="text-muted-foreground">({currency})</span>
+          </h2>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv}>
               <Download /> CSV
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <a href={`/api/reports/monthly-summary/pdf?year=${year}`} target="_blank" rel="noreferrer">
+              <a href={`/api/reports/monthly-summary/pdf?${pdfParams.toString()}`} target="_blank" rel="noreferrer">
                 <FileText /> PDF
               </a>
             </Button>

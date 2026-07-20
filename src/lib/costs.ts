@@ -2,15 +2,27 @@ import { prisma } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { getTripHoursAndMiles } from "@/lib/trips";
 
+export type Currency = "CAD" | "USD";
+export const CURRENCIES: Currency[] = ["CAD", "USD"];
+
+export type CurrencyAmounts = Record<Currency, number>;
+export type CurrencyRates = Record<Currency, number | null>;
+
+function zeroAmounts(): CurrencyAmounts {
+  return { CAD: 0, USD: 0 };
+}
+
 export interface CostEntryDto {
   id: string;
   date: Date;
   categoryId: string;
   categoryName: string;
   categoryType: "FIXED" | "DIRECT";
-  vendor: string | null;
+  vendorId: string | null;
+  vendorName: string | null;
   invoiceNumber: string | null;
   amount: number;
+  currency: Currency;
   notes: string | null;
   attachmentCount: number;
 }
@@ -20,6 +32,8 @@ export interface CostFilters {
   to?: Date;
   categoryId?: string;
   type?: "FIXED" | "DIRECT";
+  vendorId?: string;
+  currency?: Currency;
 }
 
 function buildWhere(filters: CostFilters) {
@@ -34,13 +48,15 @@ function buildWhere(filters: CostFilters) {
       : {}),
     ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
     ...(filters.type ? { category: { type: filters.type } } : {}),
+    ...(filters.vendorId ? { vendorId: filters.vendorId } : {}),
+    ...(filters.currency ? { currency: filters.currency } : {}),
   };
 }
 
 export async function getCostEntries(filters: CostFilters = {}): Promise<CostEntryDto[]> {
   const entries = await prisma.costEntry.findMany({
     where: buildWhere(filters),
-    include: { category: true, _count: { select: { attachments: true } } },
+    include: { category: true, vendor: true, _count: { select: { attachments: true } } },
     orderBy: { date: "desc" },
   });
 
@@ -50,62 +66,74 @@ export async function getCostEntries(filters: CostFilters = {}): Promise<CostEnt
     categoryId: e.categoryId,
     categoryName: e.category.name,
     categoryType: e.category.type,
-    vendor: e.vendor,
+    vendorId: e.vendorId,
+    vendorName: e.vendor?.name ?? null,
     invoiceNumber: e.invoiceNumber,
     amount: toNumber(e.amount),
+    currency: e.currency,
     notes: e.notes,
     attachmentCount: e._count.attachments,
   }));
 }
 
 export interface CostSummary {
-  fixedTotal: number;
-  directTotal: number;
-  total: number;
-  byCategory: { categoryId: string; name: string; type: "FIXED" | "DIRECT"; total: number }[];
+  fixedTotal: CurrencyAmounts;
+  directTotal: CurrencyAmounts;
+  total: CurrencyAmounts;
+  byCategory: { categoryId: string; name: string; type: "FIXED" | "DIRECT"; total: CurrencyAmounts }[];
 }
 
-export async function getCostSummary(range?: { start: Date; end: Date }): Promise<CostSummary> {
+export async function getCostSummary(range?: { start: Date; end: Date }, vendorId?: string): Promise<CostSummary> {
   const categories = await prisma.costCategory.findMany({
     include: {
       entries: {
-        where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
-        select: { amount: true },
+        where: {
+          ...(range ? { date: { gte: range.start, lt: range.end } } : {}),
+          ...(vendorId ? { vendorId } : {}),
+        },
+        select: { amount: true, currency: true },
       },
     },
     orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
   });
 
-  const byCategory = categories.map((c) => ({
-    categoryId: c.id,
-    name: c.name,
-    type: c.type,
-    total: c.entries.reduce((sum, e) => sum + toNumber(e.amount), 0),
-  }));
+  const byCategory = categories.map((c) => {
+    const total = zeroAmounts();
+    for (const e of c.entries) total[e.currency] += toNumber(e.amount);
+    return { categoryId: c.id, name: c.name, type: c.type, total };
+  });
 
-  const fixedTotal = byCategory.filter((c) => c.type === "FIXED").reduce((s, c) => s + c.total, 0);
-  const directTotal = byCategory.filter((c) => c.type === "DIRECT").reduce((s, c) => s + c.total, 0);
+  const fixedTotal = zeroAmounts();
+  const directTotal = zeroAmounts();
+  for (const c of byCategory) {
+    const target = c.type === "FIXED" ? fixedTotal : directTotal;
+    target.CAD += c.total.CAD;
+    target.USD += c.total.USD;
+  }
+  const total: CurrencyAmounts = { CAD: fixedTotal.CAD + directTotal.CAD, USD: fixedTotal.USD + directTotal.USD };
 
-  return { fixedTotal, directTotal, total: fixedTotal + directTotal, byCategory };
+  return { fixedTotal, directTotal, total, byCategory };
 }
 
 export interface CostPerMetrics {
   hours: number;
   miles: number;
-  fixedTotal: number;
-  directTotal: number;
-  total: number;
-  fixedCostPerHour: number | null;
-  directCostPerHour: number | null;
-  totalCostPerHour: number | null;
-  directCostPerMile: number | null;
-  totalCostPerMile: number | null;
+  fixedTotal: CurrencyAmounts;
+  directTotal: CurrencyAmounts;
+  total: CurrencyAmounts;
+  fixedCostPerHour: CurrencyRates;
+  directCostPerHour: CurrencyRates;
+  totalCostPerHour: CurrencyRates;
+  directCostPerMile: CurrencyRates;
+  totalCostPerMile: CurrencyRates;
 }
 
-export async function getCostPerMetrics(range?: { start: Date; end: Date }): Promise<CostPerMetrics> {
-  const [summary, flying] = await Promise.all([getCostSummary(range), getTripHoursAndMiles(range)]);
+export async function getCostPerMetrics(range?: { start: Date; end: Date }, vendorId?: string): Promise<CostPerMetrics> {
+  const [summary, flying] = await Promise.all([getCostSummary(range, vendorId), getTripHoursAndMiles(range)]);
 
   const div = (numerator: number, denominator: number) => (denominator > 0 ? numerator / denominator : null);
+  const perHour = (amt: CurrencyAmounts): CurrencyRates => ({ CAD: div(amt.CAD, flying.hours), USD: div(amt.USD, flying.hours) });
+  const perMile = (amt: CurrencyAmounts): CurrencyRates => ({ CAD: div(amt.CAD, flying.miles), USD: div(amt.USD, flying.miles) });
 
   return {
     hours: flying.hours,
@@ -113,11 +141,11 @@ export async function getCostPerMetrics(range?: { start: Date; end: Date }): Pro
     fixedTotal: summary.fixedTotal,
     directTotal: summary.directTotal,
     total: summary.total,
-    fixedCostPerHour: div(summary.fixedTotal, flying.hours),
-    directCostPerHour: div(summary.directTotal, flying.hours),
-    totalCostPerHour: div(summary.total, flying.hours),
-    directCostPerMile: div(summary.directTotal, flying.miles),
-    totalCostPerMile: div(summary.total, flying.miles),
+    fixedCostPerHour: perHour(summary.fixedTotal),
+    directCostPerHour: perHour(summary.directTotal),
+    totalCostPerHour: perHour(summary.total),
+    directCostPerMile: perMile(summary.directTotal),
+    totalCostPerMile: perMile(summary.total),
   };
 }
 
@@ -136,11 +164,16 @@ export interface MonthlyGrid {
   categories: { id: string; name: string; type: "FIXED" | "DIRECT" }[];
   rows: MonthlyGridRow[];
   yearTotal: MonthlyGridRow;
+  currency: Currency;
 }
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export async function getMonthlySummaryGrid(year: number): Promise<MonthlyGrid> {
+export async function getMonthlySummaryGrid(
+  year: number,
+  options: { currency?: Currency; vendorId?: string } = {}
+): Promise<MonthlyGrid> {
+  const currency = options.currency ?? "CAD";
   const categories = await prisma.costCategory.findMany({
     orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
   });
@@ -150,7 +183,7 @@ export async function getMonthlySummaryGrid(year: number): Promise<MonthlyGrid> 
 
   const [entries, trips] = await Promise.all([
     prisma.costEntry.findMany({
-      where: { date: { gte: start, lt: end } },
+      where: { date: { gte: start, lt: end }, currency, ...(options.vendorId ? { vendorId: options.vendorId } : {}) },
       select: { date: true, categoryId: true, amount: true },
     }),
     prisma.trip.findMany({
@@ -204,6 +237,7 @@ export async function getMonthlySummaryGrid(year: number): Promise<MonthlyGrid> 
     categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
     rows,
     yearTotal,
+    currency,
   };
 }
 

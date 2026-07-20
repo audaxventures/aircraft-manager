@@ -21,13 +21,19 @@ export interface CostCategoryOption {
   type: "FIXED" | "DIRECT";
 }
 
+export interface VendorOption {
+  id: string;
+  name: string;
+}
+
 export interface CostEntryFormValue {
   id: string;
   date: string; // yyyy-mm-dd
   categoryId: string;
-  vendor: string;
+  vendorId: string;
   invoiceNumber: string;
   amount: string;
+  currency: "CAD" | "USD";
   notes: string;
   attachments: { id: string; filename: string; url: string }[];
 }
@@ -37,9 +43,10 @@ function emptyValue(): CostEntryFormValue {
     id: "",
     date: new Date().toISOString().slice(0, 10),
     categoryId: "",
-    vendor: "",
+    vendorId: "",
     invoiceNumber: "",
     amount: "",
+    currency: "CAD",
     notes: "",
     attachments: [],
   };
@@ -49,10 +56,11 @@ interface CostEntryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: CostCategoryOption[];
+  vendors: VendorOption[];
   initial?: CostEntryFormValue | null;
 }
 
-function CostEntryForm({ open, onOpenChange, categories, initial }: CostEntryFormProps) {
+function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: CostEntryFormProps) {
   const [value, setValue] = React.useState<CostEntryFormValue>(initial ?? emptyValue());
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
@@ -81,9 +89,10 @@ function CostEntryForm({ open, onOpenChange, categories, initial }: CostEntryFor
       id: value.id || undefined,
       date: value.date,
       categoryId: value.categoryId,
-      vendor: value.vendor,
+      vendorId: value.vendorId,
       invoiceNumber: value.invoiceNumber,
       amount: value.amount,
+      currency: value.currency,
       notes: value.notes,
     });
     setSaving(false);
@@ -150,12 +159,24 @@ function CostEntryForm({ open, onOpenChange, categories, initial }: CostEntryFor
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-amount">Amount</Label>
-            <CurrencyInput
-              id="ce-amount"
-              value={value.amount}
-              onChange={(amount) => setValue((v) => ({ ...v, amount }))}
-              required
-            />
+            <div className="flex gap-2">
+              <CurrencyInput
+                id="ce-amount"
+                value={value.amount}
+                onChange={(amount) => setValue((v) => ({ ...v, amount }))}
+                required
+                className="flex-1"
+              />
+              <Select value={value.currency} onValueChange={(currency) => setValue((v) => ({ ...v, currency: currency as "CAD" | "USD" }))}>
+                <SelectTrigger id="ce-currency" className="w-20 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CAD">CAD</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -187,7 +208,22 @@ function CostEntryForm({ open, onOpenChange, categories, initial }: CostEntryFor
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="ce-vendor">Vendor</Label>
-            <Input id="ce-vendor" value={value.vendor} onChange={(e) => setValue((v) => ({ ...v, vendor: e.target.value }))} />
+            <Select
+              value={value.vendorId || "none"}
+              onValueChange={(vendorId) => setValue((v) => ({ ...v, vendorId: vendorId === "none" ? "" : vendorId }))}
+            >
+              <SelectTrigger id="ce-vendor">
+                <SelectValue placeholder="Select a vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {vendors.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-invoice">Invoice #</Label>

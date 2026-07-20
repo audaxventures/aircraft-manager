@@ -3,27 +3,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AircraftForm } from "@/components/settings/aircraft-form";
 import { CostCategoriesManager } from "@/components/settings/cost-categories-manager";
 import { PilotsManager } from "@/components/settings/pilots-manager";
+import { VendorsManager } from "@/components/settings/vendors-manager";
+import { EventCategoriesManager } from "@/components/settings/event-categories-manager";
 import { RegulatorySettingsForm } from "@/components/settings/regulatory-settings-form";
 import { getPrimaryAircraft } from "@/lib/aircraft";
-import { getCostCategories, getPilots, getRegulatorySettings } from "@/lib/settings";
+import {
+  getCostCategories,
+  getEventCategories,
+  getPilots,
+  getRegulatorySettings,
+  getVendors,
+} from "@/lib/settings";
 import { toNumber } from "@/lib/format";
 
 export default async function SettingsPage() {
-  const [aircraft, categories, pilots, regSettings] = await Promise.all([
+  const [aircraft, categories, pilots, vendors, eventCategories, regSettings] = await Promise.all([
     getPrimaryAircraft(),
     getCostCategories(true),
     getPilots(true),
+    getVendors(true),
+    getEventCategories(true),
     getRegulatorySettings(),
   ]);
 
   return (
     <div>
-      <PageHeader title="Settings" description="Aircraft, cost categories, pilots, and regulatory thresholds." />
+      <PageHeader
+        title="Settings"
+        description="Aircraft, cost categories, vendors, pilots, event categories, and regulatory thresholds."
+      />
       <Tabs defaultValue="aircraft">
         <TabsList>
           <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
           <TabsTrigger value="categories">Cost categories</TabsTrigger>
+          <TabsTrigger value="vendors">Vendors</TabsTrigger>
           <TabsTrigger value="pilots">Pilots</TabsTrigger>
+          <TabsTrigger value="event-categories">Event categories</TabsTrigger>
           <TabsTrigger value="regulatory">Regulatory thresholds</TabsTrigger>
         </TabsList>
         <TabsContent value="aircraft">
@@ -32,8 +47,14 @@ export default async function SettingsPage() {
         <TabsContent value="categories">
           <CostCategoriesManager categories={categories} />
         </TabsContent>
+        <TabsContent value="vendors">
+          <VendorsManager vendors={vendors} />
+        </TabsContent>
         <TabsContent value="pilots">
           <PilotsManager pilots={pilots} />
+        </TabsContent>
+        <TabsContent value="event-categories">
+          <EventCategoriesManager categories={eventCategories} />
         </TabsContent>
         <TabsContent value="regulatory">
           <RegulatorySettingsForm

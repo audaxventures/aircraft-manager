@@ -1,15 +1,14 @@
 import { PageHeader } from "@/components/shared/page-header";
-import { KpiCard } from "@/components/shared/kpi-card";
 import { CostFilters } from "@/components/costs/cost-filters";
 import { CostsView } from "@/components/costs/costs-view";
-import { getCostEntries, getCostPerMetrics } from "@/lib/costs";
-import { getCostCategories } from "@/lib/settings";
+import { CostSummaryPanel } from "@/components/costs/cost-summary-panel";
+import { getCostEntries, getCostPerMetrics, getCostSummary } from "@/lib/costs";
+import { getCostCategories, getVendors } from "@/lib/settings";
 import { getMtdRange, getYtdRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
-import { formatCurrency, formatHours, formatNumber } from "@/lib/format";
 
 interface CostsPageProps {
-  searchParams: Promise<{ range?: string; type?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ range?: string; type?: string; from?: string; to?: string; vendor?: string }>;
 }
 
 export default async function CostsPage({ searchParams }: CostsPageProps) {
@@ -33,35 +32,32 @@ export default async function CostsPage({ searchParams }: CostsPageProps) {
   }
 
   const type = params.type === "FIXED" || params.type === "DIRECT" ? params.type : undefined;
+  const vendorId = params.vendor || undefined;
 
-  const [entries, metrics, categories] = await Promise.all([
-    getCostEntries({ from: range?.start, to: range?.end, type }),
-    getCostPerMetrics(range),
+  const [entries, metrics, summary, categories, vendors] = await Promise.all([
+    getCostEntries({ from: range?.start, to: range?.end, type, vendorId }),
+    getCostPerMetrics(range, vendorId),
+    getCostSummary(range, vendorId),
     getCostCategories(),
+    getVendors(),
   ]);
+
+  const exportFrom = range?.start && range.start.getTime() > 0 ? range.start.toISOString().slice(0, 10) : undefined;
+  const exportTo = range?.end ? new Date(range.end.getTime() - 86400000).toISOString().slice(0, 10) : undefined;
 
   return (
     <div>
       <PageHeader title="Costs" description="Fixed and direct operating costs for C-FPFX." />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <KpiCard label="Fixed" value={formatCurrency(metrics.fixedTotal, { noDecimals: true })} />
-        <KpiCard label="Direct" value={formatCurrency(metrics.directTotal, { noDecimals: true })} />
-        <KpiCard label="Total" value={formatCurrency(metrics.total, { noDecimals: true })} />
-        <KpiCard
-          label="Total cost / hour"
-          value={metrics.totalCostPerHour !== null ? formatCurrency(metrics.totalCostPerHour) : "—"}
-          sublabel={`${formatHours(metrics.hours)} flown`}
-        />
-        <KpiCard
-          label="Total cost / mile"
-          value={metrics.totalCostPerMile !== null ? formatCurrency(metrics.totalCostPerMile) : "—"}
-          sublabel={`${formatNumber(metrics.miles)} mi flown`}
-        />
-      </div>
+      <CostSummaryPanel summary={summary} metrics={metrics} />
 
-      <CostFilters />
-      <CostsView entries={entries} categories={categories} />
+      <CostFilters vendors={vendors} />
+      <CostsView
+        entries={entries}
+        categories={categories}
+        vendors={vendors}
+        exportFilters={{ from: exportFrom, to: exportTo, vendorId }}
+      />
     </div>
   );
 }

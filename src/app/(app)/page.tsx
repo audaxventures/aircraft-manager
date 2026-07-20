@@ -45,11 +45,15 @@ export default async function DashboardPage() {
       <PageHeader title="Dashboard" description={`${aircraft?.tailNumber ?? "C-FPFX"} operations at a glance.`} />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="YTD total cost" value={formatCurrency(metrics.total, { noDecimals: true })} />
+        <KpiCard
+          label="YTD total cost"
+          value={formatCurrency(metrics.total.CAD, { noDecimals: true })}
+          sublabel={metrics.total.USD !== 0 ? `${formatCurrency(metrics.total.USD, { noDecimals: true })} USD` : undefined}
+        />
         <KpiCard label="YTD hours flown" value={formatHours(metrics.hours)} />
         <KpiCard label="Trips (YTD)" value={flying.tripCount} />
-        <KpiCard label="Total cost / hour" value={metrics.totalCostPerHour !== null ? formatCurrency(metrics.totalCostPerHour) : "—"} />
-        <KpiCard label="Total cost / mile" value={metrics.totalCostPerMile !== null ? formatCurrency(metrics.totalCostPerMile) : "—"} />
+        <KpiCard label="Total cost / hour" value={metrics.totalCostPerHour.CAD !== null ? formatCurrency(metrics.totalCostPerHour.CAD) : "—"} />
+        <KpiCard label="Total cost / mile" value={metrics.totalCostPerMile.CAD !== null ? formatCurrency(metrics.totalCostPerMile.CAD) : "—"} />
         <KpiCard label="YTD miles" value={formatNumber(metrics.miles)} />
       </div>
 

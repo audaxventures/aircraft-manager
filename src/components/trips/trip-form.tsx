@@ -23,6 +23,7 @@ export interface PilotOption {
 export interface TripFormValue {
   id: string;
   date: string;
+  endDate: string;
   departureAirport: string;
   arrivalAirport: string;
   routeLabel: string;
@@ -43,6 +44,7 @@ function emptyValue(): TripFormValue {
   return {
     id: "",
     date: new Date().toISOString().slice(0, 10),
+    endDate: "",
     departureAirport: "",
     arrivalAirport: "",
     routeLabel: "",
@@ -85,6 +87,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   }, [open, initial]);
 
   const isEditing = !!value.id;
+  const isPlanned = isEditing && (!value.hours || parseFloat(value.hours) === 0);
 
   const cycles = parseInt(value.cycles || "0", 10);
   const takeoffSum = parseInt(value.dayTakeoffs || "0", 10) + parseInt(value.nightTakeoffs || "0", 10);
@@ -113,6 +116,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
     const result = await saveTrip({
       id: value.id || undefined,
       date: value.date,
+      endDate: value.endDate || undefined,
       departureAirport: value.departureAirport,
       arrivalAirport: value.arrivalAirport,
       routeLabel: value.routeLabel,
@@ -151,7 +155,11 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       open={open}
       onOpenChange={onOpenChange}
       title={isEditing ? "Edit trip" : "Add trip"}
-      description={isEditing ? formatDate(value.date) : undefined}
+      description={
+        isEditing
+          ? `${formatDate(value.date)}${isPlanned ? " · Planned — add hours to mark as flown" : ""}`
+          : undefined
+      }
       footer={
         <>
           {isEditing && (
@@ -169,9 +177,15 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       }
     >
       <form id="trip-form" onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="tr-date">Date</Label>
-          <DateInput id="tr-date" value={value.date} onChange={(e) => setValue((v) => ({ ...v, date: e.target.value }))} required />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="tr-date">Date</Label>
+            <DateInput id="tr-date" value={value.date} onChange={(e) => setValue((v) => ({ ...v, date: e.target.value }))} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tr-end-date">End date (optional)</Label>
+            <DateInput id="tr-end-date" value={value.endDate} onChange={(e) => setValue((v) => ({ ...v, endDate: e.target.value }))} />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

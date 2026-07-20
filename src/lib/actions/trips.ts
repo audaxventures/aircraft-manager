@@ -12,6 +12,7 @@ const tripSchema = z
   .object({
     id: z.string().optional(),
     date: z.coerce.date(),
+    endDate: z.coerce.date().optional(),
     departureAirport: z.string().min(1, "Departure is required"),
     arrivalAirport: z.string().min(1, "Arrival is required"),
     routeLabel: z.string().optional(),
@@ -40,13 +41,15 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
   const parsed = tripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { id, routeLabel, purpose, notes, pilotId, passengerIds, ...rest } = parsed.data;
+  const { id, endDate, routeLabel, purpose, notes, pilotId, passengerIds, ...rest } = parsed.data;
   const data = {
     ...rest,
+    endDate: endDate ?? null,
     routeLabel: routeLabel || `${rest.departureAirport} - ${rest.arrivalAirport}`,
     purpose: purpose || null,
     notes: notes || null,
     pilotId: pilotId || null,
+    status: rest.hours > 0 ? ("COMPLETED" as const) : ("PLANNED" as const),
   };
 
   const tripId = await prisma.$transaction(async (tx) => {
@@ -70,6 +73,7 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
   revalidatePath("/duty-days");
   revalidatePath("/currency");
   revalidatePath("/reports");
+  revalidatePath("/schedule");
   revalidatePath("/");
   return { ok: true, id: tripId };
 }
@@ -81,6 +85,7 @@ export async function deleteTrip(id: string): Promise<ActionResult> {
   revalidatePath("/duty-days");
   revalidatePath("/currency");
   revalidatePath("/reports");
+  revalidatePath("/schedule");
   revalidatePath("/");
   return { ok: true };
 }

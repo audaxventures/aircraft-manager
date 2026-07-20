@@ -101,6 +101,72 @@ export async function setPilotArchived(id: string, archived: boolean): Promise<A
   return { ok: true };
 }
 
+const vendorSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+});
+
+export async function saveVendor(input: unknown): Promise<ActionResult> {
+  const parsed = vendorSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+
+  const { id, ...data } = parsed.data;
+  try {
+    if (id) {
+      await prisma.vendor.update({ where: { id }, data });
+    } else {
+      await prisma.vendor.create({ data });
+    }
+  } catch {
+    return { ok: false, error: "A vendor with that name already exists." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/costs");
+  return { ok: true };
+}
+
+export async function setVendorArchived(id: string, archived: boolean): Promise<ActionResult> {
+  await prisma.vendor.update({ where: { id }, data: { archived } });
+  revalidatePath("/settings");
+  revalidatePath("/costs");
+  return { ok: true };
+}
+
+const eventCategorySchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  color: z.string().min(1, "Color is required"),
+  sortOrder: z.coerce.number().int().default(0),
+});
+
+export async function saveEventCategory(input: unknown): Promise<ActionResult> {
+  const parsed = eventCategorySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+
+  const { id, ...data } = parsed.data;
+  try {
+    if (id) {
+      await prisma.eventCategory.update({ where: { id }, data });
+    } else {
+      await prisma.eventCategory.create({ data });
+    }
+  } catch {
+    return { ok: false, error: "An event category with that name already exists." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/schedule");
+  return { ok: true };
+}
+
+export async function setEventCategoryArchived(id: string, archived: boolean): Promise<ActionResult> {
+  await prisma.eventCategory.update({ where: { id }, data: { archived } });
+  revalidatePath("/settings");
+  revalidatePath("/schedule");
+  return { ok: true };
+}
+
 const regulatorySettingsSchema = z.object({
   id: z.string(),
   maxFlightDutyHours: z.coerce.number().positive(),

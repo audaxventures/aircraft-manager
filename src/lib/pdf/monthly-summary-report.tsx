@@ -41,7 +41,7 @@ function MonthlySummaryReport({ aircraftTailNumber, year, grid, generatedAt }: M
       <Page size="LETTER" orientation="landscape" style={s.page}>
         <View style={s.headerBlock}>
           <Text style={s.title}>Monthly Cost Summary</Text>
-          <Text style={s.subtitle}>Fiscal year {year}</Text>
+          <Text style={s.subtitle}>Fiscal year {year} · {grid.currency}</Text>
           <View style={s.metaGrid}>
             <View style={s.metaItem}>
               <Text style={s.metaLabel}>Aircraft</Text>

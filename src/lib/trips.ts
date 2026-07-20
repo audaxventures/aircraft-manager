@@ -17,7 +17,9 @@ export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
 
 export interface TripDto {
   id: string;
+  status: "PLANNED" | "COMPLETED";
   date: Date;
+  endDate: Date | null;
   departureAirport: string;
   arrivalAirport: string;
   routeLabel: string | null;
@@ -71,7 +73,9 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
 
   return trips.map((t) => ({
     id: t.id,
+    status: t.status,
     date: t.date,
+    endDate: t.endDate,
     departureAirport: t.departureAirport,
     arrivalAirport: t.arrivalAirport,
     routeLabel: t.routeLabel,

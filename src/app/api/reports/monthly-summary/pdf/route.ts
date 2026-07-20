@@ -8,8 +8,13 @@ import { MonthlySummaryReport } from "@/lib/pdf/monthly-summary-report";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const year = parseInt(searchParams.get("year") ?? String(new Date().getFullYear()), 10);
+  const currency = searchParams.get("currency") === "USD" ? "USD" : "CAD";
+  const vendorId = searchParams.get("vendor") || undefined;
 
-  const [grid, aircraft] = await Promise.all([getMonthlySummaryGrid(year), getPrimaryAircraft()]);
+  const [grid, aircraft] = await Promise.all([
+    getMonthlySummaryGrid(year, { currency, vendorId }),
+    getPrimaryAircraft(),
+  ]);
 
   const buffer = await renderToBuffer(
     MonthlySummaryReport({
@@ -23,7 +28,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="monthly-cost-summary-${year}.pdf"`,
+      "Content-Disposition": `attachment; filename="monthly-cost-summary-${year}-${currency}.pdf"`,
     },
   });
 }

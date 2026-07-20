@@ -12,9 +12,10 @@ const costEntrySchema = z.object({
   id: z.string().optional(),
   date: z.coerce.date(),
   categoryId: z.string().min(1, "Category is required"),
-  vendor: z.string().optional(),
+  vendorId: z.string().optional(),
   invoiceNumber: z.string().optional(),
   amount: z.coerce.number({ message: "Enter a valid amount" }).finite("Enter a valid amount"),
+  currency: z.enum(["CAD", "USD"]).default("CAD"),
   notes: z.string().optional(),
 });
 
@@ -22,10 +23,10 @@ export async function saveCostEntry(input: unknown): Promise<ActionResult> {
   const parsed = costEntrySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { id, vendor, invoiceNumber, notes, ...rest } = parsed.data;
+  const { id, vendorId, invoiceNumber, notes, ...rest } = parsed.data;
   const data = {
     ...rest,
-    vendor: vendor || null,
+    vendorId: vendorId || null,
     invoiceNumber: invoiceNumber || null,
     notes: notes || null,
   };

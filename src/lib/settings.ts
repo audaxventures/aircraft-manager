@@ -19,3 +19,17 @@ export async function getPilots(includeArchived = false) {
     orderBy: { name: "asc" },
   });
 }
+
+export async function getVendors(includeArchived = false) {
+  return prisma.vendor.findMany({
+    where: includeArchived ? undefined : { archived: false },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getEventCategories(includeArchived = false) {
+  return prisma.eventCategory.findMany({
+    where: includeArchived ? undefined : { archived: false },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+}

@@ -11,7 +11,7 @@ datasource db {
 }
 
 // A single aircraft record today, but modeled as a table (not hardcoded)
-// so a second tail number can be added later without a schema rebuild.
+// so a second tail number could be added later without a schema rebuild.
 model Aircraft {
   id                String   @id @default(cuid())
   tailNumber        String   @unique
@@ -27,6 +27,11 @@ enum CostType {
   DIRECT
 }
 
+enum Currency {
+  CAD
+  USD
+}
+
 model CostCategory {
   id         String     @id @default(cuid())
   name       String     @unique
@@ -38,31 +43,44 @@ model CostCategory {
   entries    CostEntry[]
 }
 
+model Vendor {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  archived  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   CostEntry[]
+}
+
 model CostEntry {
-  id          String       @id @default(cuid())
-  date        DateTime
-  categoryId  String
-  category    CostCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  vendor      String?
+  id            String       @id @default(cuid())
+  date          DateTime
+  categoryId    String
+  category      CostCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  vendorId      String?
+  vendor        Vendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   invoiceNumber String?
-  amount      Decimal      @db.Decimal(12, 2)
-  notes       String?
-  attachments Attachment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  amount        Decimal      @db.Decimal(12, 2)
+  currency      Currency     @default(CAD)
+  notes         String?
+  attachments   Attachment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([date])
   @@index([categoryId])
+  @@index([vendorId])
 }
 
 model Pilot {
-  id           String        @id @default(cuid())
-  name         String        @unique
-  archived     Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  trips        Trip[]
-  dutyDayLogs  DutyDayLog[]
+  id            String          @id @default(cuid())
+  name          String          @unique
+  archived      Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  trips         Trip[]
+  dutyDayLogs   DutyDayLog[]
+  calendarEvents CalendarEvent[]
 }
 
 model Passenger {
@@ -72,14 +90,21 @@ model Passenger {
   trips     TripPassenger[]
 }
 
+enum TripStatus {
+  PLANNED
+  COMPLETED
+}
+
 model Trip {
   id                String          @id @default(cuid())
+  status            TripStatus      @default(COMPLETED)
   date              DateTime
+  endDate           DateTime?
   departureAirport  String
   arrivalAirport    String
   routeLabel        String?
-  hours             Decimal         @db.Decimal(6, 2)
-  cycles            Int             @default(1)
+  hours             Decimal         @default(0) @db.Decimal(6, 2)
+  cycles            Int             @default(0)
   miles             Int             @default(0)
   purpose           String?
   notes             String?
@@ -96,6 +121,7 @@ model Trip {
 
   @@index([date])
   @@index([pilotId])
+  @@index([status])
 }
 
 model TripPassenger {
@@ -137,6 +163,37 @@ model Attachment {
   tripId      String?
   trip        Trip?      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
+}
+
+// Configurable categories for the Scheduling calendar (Maintenance, Pilot
+// Time Away, etc). Trips are not stored here — they live in Trip and are
+// merged into the calendar view live, so there's one source of truth.
+model EventCategory {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  color     String          @default("#2a78d6")
+  sortOrder Int             @default(0)
+  archived  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  events    CalendarEvent[]
+}
+
+model CalendarEvent {
+  id         String        @id @default(cuid())
+  categoryId String
+  category   EventCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title      String
+  startDate  DateTime
+  endDate    DateTime
+  pilotId    String?
+  pilot      Pilot?        @relation(fields: [pilotId], references: [id], onDelete: SetNull)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([startDate])
+  @@index([categoryId])
 }
 
 // Singleton row holding the configurable CARS 604 / CAR 401.05(2) thresholds,

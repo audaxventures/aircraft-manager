@@ -5,6 +5,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Download, Plus, PlaneTakeoff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TripForm, type PilotOption, type TripFormValue } from "@/components/trips/trip-form";
@@ -32,6 +33,7 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
     setEditing({
       id: trip.id,
       date: trip.date.toISOString().slice(0, 10),
+      endDate: trip.endDate ? trip.endDate.toISOString().slice(0, 10) : "",
       departureAirport: trip.departureAirport,
       arrivalAirport: trip.arrivalAirport,
       routeLabel: trip.routeLabel ?? "",
@@ -76,7 +78,16 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
     {
       accessorKey: "routeLabel",
       header: "Route",
-      cell: ({ row }) => row.original.routeLabel || `${row.original.departureAirport} - ${row.original.arrivalAirport}`,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <span>{row.original.routeLabel || `${row.original.departureAirport} - ${row.original.arrivalAirport}`}</span>
+          {row.original.status === "PLANNED" && (
+            <Badge variant="outline" className="text-[10px]">
+              Planned
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: "hours",
