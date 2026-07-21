@@ -21,6 +21,11 @@ interface AircraftFormProps {
     type: string;
     baseAirport: string;
     fiscalYearStartMonth: number;
+    serialNumber: string | null;
+    ownerOperator: string | null;
+    programManager: string | null;
+    purchaseTotalHours: number;
+    purchaseTotalCycles: number;
   } | null;
 }
 
@@ -29,6 +34,11 @@ function AircraftForm({ aircraft }: AircraftFormProps) {
   const [type, setType] = React.useState(aircraft?.type ?? "");
   const [baseAirport, setBaseAirport] = React.useState(aircraft?.baseAirport ?? "");
   const [fiscalMonth, setFiscalMonth] = React.useState(String(aircraft?.fiscalYearStartMonth ?? 1));
+  const [serialNumber, setSerialNumber] = React.useState(aircraft?.serialNumber ?? "");
+  const [ownerOperator, setOwnerOperator] = React.useState(aircraft?.ownerOperator ?? "");
+  const [programManager, setProgramManager] = React.useState(aircraft?.programManager ?? "");
+  const [purchaseTotalHours, setPurchaseTotalHours] = React.useState(String(aircraft?.purchaseTotalHours ?? 0));
+  const [purchaseTotalCycles, setPurchaseTotalCycles] = React.useState(String(aircraft?.purchaseTotalCycles ?? 0));
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
 
@@ -42,6 +52,11 @@ function AircraftForm({ aircraft }: AircraftFormProps) {
       type,
       baseAirport,
       fiscalYearStartMonth: fiscalMonth,
+      serialNumber,
+      ownerOperator,
+      programManager,
+      purchaseTotalHours,
+      purchaseTotalCycles,
     });
     setSaving(false);
     if (!result.ok) {
@@ -80,6 +95,55 @@ function AircraftForm({ aircraft }: AircraftFormProps) {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="border-t pt-4">
+        <div className="mb-3 text-xs font-medium text-muted-foreground">Weekly report letterhead</div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="serialNumber">Serial number</Label>
+            <Input id="serialNumber" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="0266" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ownerOperator">Owner / Operator</Label>
+            <Input id="ownerOperator" value={ownerOperator} onChange={(e) => setOwnerOperator(e.target.value)} placeholder="Saults & Pollard" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="programManager">Program manager</Label>
+            <Input id="programManager" value={programManager} onChange={(e) => setProgramManager(e.target.value)} placeholder="Michael Zaporzan" />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t pt-4">
+        <div className="mb-3 text-xs font-medium text-muted-foreground">
+          Totals at purchase (used to compute lifetime hours/cycles on the weekly report)
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="purchaseTotalHours">Total time (hrs)</Label>
+            <Input
+              id="purchaseTotalHours"
+              type="number"
+              step="0.1"
+              min="0"
+              value={purchaseTotalHours}
+              onChange={(e) => setPurchaseTotalHours(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="purchaseTotalCycles">Total cycles</Label>
+            <Input
+              id="purchaseTotalCycles"
+              type="number"
+              step="1"
+              min="0"
+              value={purchaseTotalCycles}
+              onChange={(e) => setPurchaseTotalCycles(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={saving}>
         {saving ? "Saving…" : "Save aircraft"}

@@ -18,6 +18,14 @@ model Aircraft {
   type              String
   baseAirport       String
   fiscalYearStartMonth Int   @default(1) // 1-12
+  // Reference facts used on the Weekly Status Report letterhead and to
+  // compute lifetime totals (this app only knows hours/cycles logged since
+  // trips started being tracked here, so purchase totals anchor the running count).
+  serialNumber      String?
+  ownerOperator     String?
+  programManager    String?
+  purchaseTotalHours  Decimal @default(0) @db.Decimal(8, 1)
+  purchaseTotalCycles Int     @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -211,6 +219,29 @@ model TripExportPreset {
   columns   String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// A saved weekly client status report. The narrative and list sections are
+// free-form and user-edited; auto-computed stats (totals, YTD, next trip)
+// are folded into weekOverview as an editable starting draft rather than
+// being re-derived at read time, so a saved report's wording never shifts
+// under the user after the fact.
+model WeeklyReport {
+  id                String   @id @default(cuid())
+  reportDate        DateTime
+  ownerOperator     String?
+  programManager    String?
+  weekOverview      String
+  accomplishments   String[]
+  newIssues         String[]
+  toBeCompleted     String[]
+  customerDecisions String[]
+  // [{ description: string, due: string }]
+  maintenanceItems  Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([reportDate])
 }
 
 // Singleton row holding the configurable CARS 604 / CAR 401.05(2) thresholds,

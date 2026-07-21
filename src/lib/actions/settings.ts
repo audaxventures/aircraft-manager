@@ -13,13 +13,24 @@ const aircraftSchema = z.object({
   type: z.string().min(1, "Aircraft type is required"),
   baseAirport: z.string().min(1, "Base airport is required"),
   fiscalYearStartMonth: z.coerce.number().int().min(1).max(12),
+  serialNumber: z.string().optional(),
+  ownerOperator: z.string().optional(),
+  programManager: z.string().optional(),
+  purchaseTotalHours: z.coerce.number().nonnegative().default(0),
+  purchaseTotalCycles: z.coerce.number().int().nonnegative().default(0),
 });
 
 export async function saveAircraft(input: unknown): Promise<ActionResult> {
   const parsed = aircraftSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { id, ...data } = parsed.data;
+  const { id, serialNumber, ownerOperator, programManager, ...rest } = parsed.data;
+  const data = {
+    ...rest,
+    serialNumber: serialNumber || null,
+    ownerOperator: ownerOperator || null,
+    programManager: programManager || null,
+  };
   try {
     if (id) {
       await prisma.aircraft.update({ where: { id }, data });

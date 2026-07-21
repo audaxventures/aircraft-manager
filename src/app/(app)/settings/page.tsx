@@ -42,7 +42,22 @@ export default async function SettingsPage() {
           <TabsTrigger value="regulatory">Regulatory thresholds</TabsTrigger>
         </TabsList>
         <TabsContent value="aircraft">
-          <AircraftForm aircraft={aircraft} />
+          <AircraftForm
+            aircraft={
+              aircraft && {
+                id: aircraft.id,
+                tailNumber: aircraft.tailNumber,
+                type: aircraft.type,
+                baseAirport: aircraft.baseAirport,
+                fiscalYearStartMonth: aircraft.fiscalYearStartMonth,
+                serialNumber: aircraft.serialNumber,
+                ownerOperator: aircraft.ownerOperator,
+                programManager: aircraft.programManager,
+                purchaseTotalHours: toNumber(aircraft.purchaseTotalHours),
+                purchaseTotalCycles: aircraft.purchaseTotalCycles,
+              }
+            }
+          />
         </TabsContent>
         <TabsContent value="categories">
           <CostCategoriesManager categories={categories} />

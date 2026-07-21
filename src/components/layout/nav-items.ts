@@ -6,6 +6,7 @@ import {
   BadgeCheck,
   FileBarChart,
   CalendarDays,
+  ClipboardList,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -24,5 +25,6 @@ export const navItems: NavItem[] = [
   { label: "Duty Days", href: "/duty-days", icon: Timer },
   { label: "Currency", href: "/currency", icon: BadgeCheck },
   { label: "Reports", href: "/reports", icon: FileBarChart },
+  { label: "Weekly Reports", href: "/weekly-reports", icon: ClipboardList },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
