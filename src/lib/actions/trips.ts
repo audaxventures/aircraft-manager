@@ -4,19 +4,24 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/db";
-import { decimalHourToUtcDate } from "@/lib/flight-time";
+import { decimalHourToUtcDate, parseDecimalHour } from "@/lib/flight-time";
 import { upsertDutyDayLogFromTrip } from "@/lib/duty";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string; name: string } | { ok: false; error: string };
 
-const DECIMAL_HOUR_RE = /^([0-9]|1[0-9]|2[0-3])\.[0-9]$/;
-
 const timeSchema = z
   .string()
   .optional()
-  .refine((v) => !v || DECIMAL_HOUR_RE.test(v), "Time must be in HH.T format, e.g. 14.3")
-  .transform((v) => (v ? Math.round(parseFloat(v) * 10) / 10 : undefined));
+  .transform((v, ctx) => {
+    if (!v) return undefined;
+    const parsed = parseDecimalHour(v);
+    if (parsed === null) {
+      ctx.addIssue({ code: "custom", message: "Time must be in HH.T format, e.g. 14.3" });
+      return z.NEVER;
+    }
+    return parsed;
+  });
 
 const tripSchema = z
   .object({

@@ -4,7 +4,7 @@
  * up to the nearest 6 minutes, so parsing only validates the grid — it never
  * silently re-rounds a value the user typed.
  */
-const DECIMAL_HOUR_PATTERN = /^([0-9]|1[0-9]|2[0-3])\.[0-9]$/;
+const DECIMAL_HOUR_PATTERN = /^([01]?[0-9]|2[0-3])\.[0-9]$/;
 
 export function parseDecimalHour(input: string): number | null {
   const trimmed = input.trim();

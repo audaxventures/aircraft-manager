@@ -2,7 +2,7 @@ import { Document, Page, Text, View } from "@react-pdf/renderer";
 
 import { pdfStyles as s } from "@/lib/pdf/styles";
 import { formatDateTime } from "@/lib/format";
-import type { MonthlyGrid } from "@/lib/costs";
+import type { MonthlyGrid, MonthlyGridRow } from "@/lib/costs";
 
 interface MonthlySummaryReportProps {
   aircraftTailNumber: string;
@@ -10,6 +10,11 @@ interface MonthlySummaryReportProps {
   grid: MonthlyGrid;
   generatedAt: Date;
 }
+
+const CATEGORY_COL = "17%";
+const MONTH_COL = "6%";
+const TOTAL_COL = "11%";
+const BOLD = { fontFamily: "Helvetica-Bold" as const };
 
 function money(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
@@ -33,15 +38,45 @@ function metrics(row: { hours: number; miles: number; fixedTotal: number; direct
 }
 
 function MonthlySummaryReport({ aircraftTailNumber, year, grid, generatedAt }: MonthlySummaryReportProps) {
-  const categories = grid.categories;
-  const colWidth = `${Math.floor(70 / Math.max(categories.length, 1))}%`;
+  const fixedCategories = grid.categories.filter((c) => c.type === "FIXED");
+  const directCategories = grid.categories.filter((c) => c.type === "DIRECT");
+
+  function categoryRow(id: string, name: string) {
+    return (
+      <View key={id} style={s.tableRow} wrap={false}>
+        <Text style={[s.td, { width: CATEGORY_COL }]}>{name}</Text>
+        {grid.rows.map((row) => (
+          <Text key={row.monthIndex} style={[s.tdRight, { width: MONTH_COL }]}>
+            {money(row.byCategory[id])}
+          </Text>
+        ))}
+        <Text style={[s.tdRight, { width: TOTAL_COL }]}>{money(grid.yearTotal.byCategory[id])}</Text>
+      </View>
+    );
+  }
+
+  function subtotalRow(label: string, pick: (row: MonthlyGridRow) => number) {
+    return (
+      <View key={label} style={[s.tableRow, { borderTopWidth: 0.5, borderTopColor: "#a3a3a3" }]} wrap={false}>
+        <Text style={[s.td, { width: CATEGORY_COL }, BOLD]}>{label}</Text>
+        {grid.rows.map((row) => (
+          <Text key={row.monthIndex} style={[s.tdRight, { width: MONTH_COL }, BOLD]}>
+            {money(pick(row))}
+          </Text>
+        ))}
+        <Text style={[s.tdRight, { width: TOTAL_COL }, BOLD]}>{money(pick(grid.yearTotal))}</Text>
+      </View>
+    );
+  }
 
   return (
     <Document title={`Monthly Cost Summary ${year}`}>
       <Page size="LETTER" orientation="landscape" style={s.page}>
         <View style={s.headerBlock}>
           <Text style={s.title}>Monthly Cost Summary</Text>
-          <Text style={s.subtitle}>Fiscal year {year} · {grid.currency}</Text>
+          <Text style={s.subtitle}>
+            Fiscal year {year} · {grid.currency}
+          </Text>
           <View style={s.metaGrid}>
             <View style={s.metaItem}>
               <Text style={s.metaLabel}>Aircraft</Text>
@@ -56,44 +91,36 @@ function MonthlySummaryReport({ aircraftTailNumber, year, grid, generatedAt }: M
 
         <View style={s.table}>
           <View style={s.tableHeaderRow}>
-            <Text style={[s.th, { width: "10%" }]}>Month</Text>
-            {categories.map((c) => (
-              <Text key={c.id} style={[s.th, { width: colWidth }]}>
-                {c.name}
+            <Text style={[s.th, { width: CATEGORY_COL }]}>Category</Text>
+            {grid.rows.map((row) => (
+              <Text key={row.monthIndex} style={[s.th, { width: MONTH_COL, textAlign: "right" }]}>
+                {row.monthLabel}
               </Text>
             ))}
-            <Text style={[s.th, { width: "10%" }]}>Fixed</Text>
-            <Text style={[s.th, { width: "10%" }]}>Direct</Text>
-            <Text style={[s.th, { width: "10%" }]}>Total</Text>
+            <Text style={[s.th, { width: TOTAL_COL, textAlign: "right" }]}>Total</Text>
           </View>
-          {grid.rows.map((row) => (
-            <View key={row.monthIndex} style={s.tableRow}>
-              <Text style={[s.td, { width: "10%" }]}>{row.monthLabel}</Text>
-              {categories.map((c) => (
-                <Text key={c.id} style={[s.tdRight, { width: colWidth }]}>
-                  {money(row.byCategory[c.id])}
-                </Text>
-              ))}
-              <Text style={[s.tdRight, { width: "10%" }]}>{money(row.fixedTotal)}</Text>
-              <Text style={[s.tdRight, { width: "10%" }]}>{money(row.directTotal)}</Text>
-              <Text style={[s.tdRight, { width: "10%" }]}>{money(row.total)}</Text>
-            </View>
-          ))}
-          <View style={[s.tableRow, { borderTopWidth: 1, borderTopColor: "#171717" }]}>
-            <Text style={[s.td, { width: "10%", fontFamily: "Helvetica-Bold" }]}>Total</Text>
-            {categories.map((c) => (
-              <Text key={c.id} style={[s.tdRight, { width: colWidth, fontFamily: "Helvetica-Bold" }]}>
-                {money(grid.yearTotal.byCategory[c.id])}
+
+          {fixedCategories.map((c) => categoryRow(c.id, c.name))}
+          {subtotalRow("Fixed total", (row) => row.fixedTotal)}
+
+          {directCategories.map((c) => categoryRow(c.id, c.name))}
+          {subtotalRow("Direct total", (row) => row.directTotal)}
+
+          <View style={[s.tableRow, { borderTopWidth: 1, borderTopColor: "#171717" }]} wrap={false}>
+            <Text style={[s.td, { width: CATEGORY_COL }, BOLD]}>Grand total</Text>
+            {grid.rows.map((row) => (
+              <Text key={row.monthIndex} style={[s.tdRight, { width: MONTH_COL }, BOLD]}>
+                {money(row.total)}
               </Text>
             ))}
-            <Text style={[s.tdRight, { width: "10%", fontFamily: "Helvetica-Bold" }]}>{money(grid.yearTotal.fixedTotal)}</Text>
-            <Text style={[s.tdRight, { width: "10%", fontFamily: "Helvetica-Bold" }]}>{money(grid.yearTotal.directTotal)}</Text>
-            <Text style={[s.tdRight, { width: "10%", fontFamily: "Helvetica-Bold" }]}>{money(grid.yearTotal.total)}</Text>
+            <Text style={[s.tdRight, { width: TOTAL_COL }, BOLD]}>{money(grid.yearTotal.total)}</Text>
           </View>
         </View>
 
         <View style={s.footer} fixed>
-          <Text>{aircraftTailNumber} · Monthly Cost Summary {year}</Text>
+          <Text>
+            {aircraftTailNumber} · Monthly Cost Summary {year}
+          </Text>
           <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
         </View>
       </Page>
@@ -113,7 +140,7 @@ function MonthlySummaryReport({ aircraftTailNumber, year, grid, generatedAt }: M
           {grid.rows.map((row) => {
             const m = metrics(row);
             return (
-              <View key={row.monthIndex} style={s.tableRow}>
+              <View key={row.monthIndex} style={s.tableRow} wrap={false}>
                 <Text style={[s.td, { width: "14%" }]}>{row.monthLabel}</Text>
                 <Text style={[s.tdRight, { width: "12%" }]}>{row.hours.toFixed(1)}</Text>
                 <Text style={[s.tdRight, { width: "12%" }]}>{money(row.miles)}</Text>
@@ -127,21 +154,23 @@ function MonthlySummaryReport({ aircraftTailNumber, year, grid, generatedAt }: M
           {(() => {
             const m = metrics(grid.yearTotal);
             return (
-              <View style={[s.tableRow, { borderTopWidth: 1, borderTopColor: "#171717" }]}>
-                <Text style={[s.td, { width: "14%", fontFamily: "Helvetica-Bold" }]}>Total</Text>
-                <Text style={[s.tdRight, { width: "12%", fontFamily: "Helvetica-Bold" }]}>{grid.yearTotal.hours.toFixed(1)}</Text>
-                <Text style={[s.tdRight, { width: "12%", fontFamily: "Helvetica-Bold" }]}>{money(grid.yearTotal.miles)}</Text>
-                <Text style={[s.tdRight, { width: "15%", fontFamily: "Helvetica-Bold" }]}>{perUnit(m.directCostPerHour)}</Text>
-                <Text style={[s.tdRight, { width: "15%", fontFamily: "Helvetica-Bold" }]}>{perUnit(m.fixedCostPerHour)}</Text>
-                <Text style={[s.tdRight, { width: "16%", fontFamily: "Helvetica-Bold" }]}>{perUnit(m.totalCostPerHour)}</Text>
-                <Text style={[s.tdRight, { width: "16%", fontFamily: "Helvetica-Bold" }]}>{perUnit(m.totalCostPerMile)}</Text>
+              <View style={[s.tableRow, { borderTopWidth: 1, borderTopColor: "#171717" }]} wrap={false}>
+                <Text style={[s.td, { width: "14%" }, BOLD]}>Total</Text>
+                <Text style={[s.tdRight, { width: "12%" }, BOLD]}>{grid.yearTotal.hours.toFixed(1)}</Text>
+                <Text style={[s.tdRight, { width: "12%" }, BOLD]}>{money(grid.yearTotal.miles)}</Text>
+                <Text style={[s.tdRight, { width: "15%" }, BOLD]}>{perUnit(m.directCostPerHour)}</Text>
+                <Text style={[s.tdRight, { width: "15%" }, BOLD]}>{perUnit(m.fixedCostPerHour)}</Text>
+                <Text style={[s.tdRight, { width: "16%" }, BOLD]}>{perUnit(m.totalCostPerHour)}</Text>
+                <Text style={[s.tdRight, { width: "16%" }, BOLD]}>{perUnit(m.totalCostPerMile)}</Text>
               </View>
             );
           })()}
         </View>
 
         <View style={s.footer} fixed>
-          <Text>{aircraftTailNumber} · Monthly Cost Summary {year}</Text>
+          <Text>
+            {aircraftTailNumber} · Monthly Cost Summary {year}
+          </Text>
           <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
         </View>
       </Page>
