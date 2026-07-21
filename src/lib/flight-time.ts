@@ -31,3 +31,9 @@ export function decimalHourToUtcDate(baseDate: Date, decimalHour: number): Date 
   const totalMinutes = Math.round(decimalHour * 60);
   return new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate(), 0, totalMinutes));
 }
+
+/** UTC hour-of-day as a decimal (e.g. 11:06Z -> 11.1), matching the trip takeoff/landing format. */
+export function dateToDecimalHour(date: Date): number {
+  const rawHour = date.getUTCHours() + date.getUTCMinutes() / 60;
+  return roundUpToSixMinutes(rawHour);
+}

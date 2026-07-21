@@ -9,9 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DutyLogForm, type PilotOption, type DutyLogFormValue } from "@/components/duty/duty-log-form";
-import { formatDate, formatHours, formatTime } from "@/lib/format";
+import { formatDate, formatHours } from "@/lib/format";
+import { dateToDecimalHour, formatDecimalHour } from "@/lib/flight-time";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import type { DutyDayLogDto } from "@/lib/duty";
+
+function formatUtcDecimalTime(d: Date) {
+  return `${formatDecimalHour(dateToDecimalHour(d))} UTC`;
+}
 
 interface DutyLogViewProps {
   logs: DutyDayLogDto[];
@@ -47,8 +52,8 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
     const csv = toCsv(logs, [
       { header: "Date", accessor: (l) => formatDate(l.date) },
       { header: "Pilot", accessor: (l) => l.pilotName },
-      { header: "Report time", accessor: (l) => formatTime(l.reportTime) },
-      { header: "Duty end time", accessor: (l) => formatTime(l.dutyEndTime) },
+      { header: "Report time", accessor: (l) => formatUtcDecimalTime(l.reportTime) },
+      { header: "Duty end time", accessor: (l) => formatUtcDecimalTime(l.dutyEndTime) },
       { header: "Flight duty time (hrs)", accessor: (l) => l.flightDutyHours.toFixed(1) },
       { header: "Rest before (hrs)", accessor: (l) => l.restPeriodBeforeHours.toFixed(1) },
       { header: "30-day flight time (hrs)", accessor: (l) => l.rolling30DayHours.toFixed(1) },
@@ -62,8 +67,8 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
   const columns: ColumnDef<DutyDayLogDto>[] = [
     { accessorKey: "date", header: "Date", cell: ({ row }) => formatDate(row.original.date), sortingFn: "datetime" },
     { accessorKey: "pilotName", header: "Pilot" },
-    { accessorKey: "reportTime", header: "Report", cell: ({ row }) => formatTime(row.original.reportTime) },
-    { accessorKey: "dutyEndTime", header: "Duty end", cell: ({ row }) => formatTime(row.original.dutyEndTime) },
+    { accessorKey: "reportTime", header: "Report (UTC)", cell: ({ row }) => formatDecimalHour(dateToDecimalHour(row.original.reportTime)) },
+    { accessorKey: "dutyEndTime", header: "Duty end (UTC)", cell: ({ row }) => formatDecimalHour(dateToDecimalHour(row.original.dutyEndTime)) },
     {
       accessorKey: "flightDutyHours",
       header: () => <div className="w-full text-right">FDT</div>,

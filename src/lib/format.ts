@@ -68,12 +68,6 @@ export function formatDateTime(value: Date | string | null | undefined) {
   return dateTimeFormatter.format(d);
 }
 
-export function formatTime(value: Date | string | null | undefined) {
-  if (!value) return "—";
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-}
 
 export function toNumber(value: unknown): number {
   if (value === null || value === undefined) return 0;

@@ -1,7 +1,8 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 
 import { pdfStyles as s } from "@/lib/pdf/styles";
-import { formatDate, formatDateTime, formatTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { dateToDecimalHour, formatDecimalHour } from "@/lib/flight-time";
 import type { DutyDayLogDto } from "@/lib/duty";
 
 interface DutyDayReportProps {
@@ -16,8 +17,8 @@ interface DutyDayReportProps {
 const COLS = [
   { w: "9%", label: "Date" },
   { w: "11%", label: "Pilot" },
-  { w: "9%", label: "Report" },
-  { w: "9%", label: "Duty end" },
+  { w: "9%", label: "Report (UTC)" },
+  { w: "9%", label: "Duty end (UTC)" },
   { w: "9%", label: "FDT (hrs)" },
   { w: "10%", label: "Rest before (hrs)" },
   { w: "11%", label: "30-day (hrs)" },
@@ -67,8 +68,8 @@ function DutyDayReport({ aircraftTailNumber, pilotName, from, to, logs, generate
             <View key={log.id} style={s.tableRow} wrap={false}>
               <Text style={[s.td, { width: COLS[0].w }]}>{formatDate(log.date)}</Text>
               <Text style={[s.td, { width: COLS[1].w }]}>{log.pilotName}</Text>
-              <Text style={[s.td, { width: COLS[2].w }]}>{formatTime(log.reportTime)}</Text>
-              <Text style={[s.td, { width: COLS[3].w }]}>{formatTime(log.dutyEndTime)}</Text>
+              <Text style={[s.td, { width: COLS[2].w }]}>{formatDecimalHour(dateToDecimalHour(log.reportTime))}</Text>
+              <Text style={[s.td, { width: COLS[3].w }]}>{formatDecimalHour(dateToDecimalHour(log.dutyEndTime))}</Text>
               <Text style={[s.tdRight, { width: COLS[4].w }]}>{log.flightDutyHours.toFixed(1)}</Text>
               <Text style={[s.tdRight, { width: COLS[5].w }]}>{log.restPeriodBeforeHours.toFixed(1)}</Text>
               <Text style={[s.tdRight, { width: COLS[6].w }]}>{log.rolling30DayHours.toFixed(1)}</Text>
