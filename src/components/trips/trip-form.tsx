@@ -14,6 +14,7 @@ import { SlideOver } from "@/components/shared/slide-over";
 import { MultiCombobox, type ComboboxOption } from "@/components/shared/multi-combobox";
 import { saveTrip, deleteTrip, createPassenger } from "@/lib/actions/trips";
 import { formatDate } from "@/lib/format";
+import { parseDecimalHour, decimalHoursBetween, formatDecimalHour } from "@/lib/flight-time";
 
 export interface PilotOption {
   id: string;
@@ -33,6 +34,9 @@ export interface TripFormValue {
   purpose: string;
   notes: string;
   pilotId: string;
+  secondPilotId: string;
+  takeoffTime: string;
+  landingTime: string;
   dayTakeoffs: string;
   dayLandings: string;
   nightTakeoffs: string;
@@ -54,6 +58,9 @@ function emptyValue(): TripFormValue {
     purpose: "",
     notes: "",
     pilotId: "",
+    secondPilotId: "",
+    takeoffTime: "",
+    landingTime: "",
     dayTakeoffs: "1",
     dayLandings: "1",
     nightTakeoffs: "0",
@@ -95,6 +102,21 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   const takeoffMismatch = cycles > 0 && takeoffSum !== cycles;
   const landingMismatch = cycles > 0 && landingSum !== cycles;
 
+  const takeoffDecimal = value.takeoffTime ? parseDecimalHour(value.takeoffTime) : null;
+  const landingDecimal = value.landingTime ? parseDecimalHour(value.landingTime) : null;
+  const takeoffInvalid = value.takeoffTime !== "" && takeoffDecimal === null;
+  const landingInvalid = value.landingTime !== "" && landingDecimal === null;
+  const hoursAutoComputed = takeoffDecimal !== null && landingDecimal !== null;
+
+  function applyComputedHours(v: TripFormValue): TripFormValue {
+    const to = v.takeoffTime ? parseDecimalHour(v.takeoffTime) : null;
+    const ld = v.landingTime ? parseDecimalHour(v.landingTime) : null;
+    if (to !== null && ld !== null) {
+      return { ...v, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
+    }
+    return v;
+  }
+
   async function handleCreatePassenger(name: string) {
     const result = await createPassenger(name);
     if (!result.ok) {
@@ -112,6 +134,10 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       setError("Day/night takeoff and landing counts must add up to the total cycles.");
       return;
     }
+    if (takeoffInvalid || landingInvalid) {
+      setError("Takeoff/landing times must be in UTC decimal format, e.g. 14.3 for 14:18.");
+      return;
+    }
     setSaving(true);
     const result = await saveTrip({
       id: value.id || undefined,
@@ -126,6 +152,9 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       purpose: value.purpose,
       notes: value.notes,
       pilotId: value.pilotId,
+      secondPilotId: value.secondPilotId,
+      takeoffTime: value.takeoffTime || undefined,
+      landingTime: value.landingTime || undefined,
       dayTakeoffs: value.dayTakeoffs,
       dayLandings: value.dayLandings,
       nightTakeoffs: value.nightTakeoffs,
@@ -223,8 +252,18 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
 
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="tr-hours">Hours</Label>
-            <Input id="tr-hours" type="number" step="0.1" min="0" value={value.hours} onChange={(e) => setValue((v) => ({ ...v, hours: e.target.value }))} required />
+            <Label htmlFor="tr-hours">Hours{hoursAutoComputed && <span className="ml-1 font-normal text-muted-foreground">(auto)</span>}</Label>
+            <Input
+              id="tr-hours"
+              type="number"
+              step="0.1"
+              min="0"
+              value={value.hours}
+              onChange={(e) => setValue((v) => ({ ...v, hours: e.target.value }))}
+              readOnly={hoursAutoComputed}
+              className={hoursAutoComputed ? "bg-secondary/50" : undefined}
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tr-cycles">Cycles</Label>
@@ -236,24 +275,77 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="tr-pilot">Pilot in command</Label>
-          <Select value={value.pilotId} onValueChange={(pilotId) => setValue((v) => ({ ...v, pilotId }))}>
-            <SelectTrigger id="tr-pilot">
-              <SelectValue placeholder="Select a pilot" />
-            </SelectTrigger>
-            <SelectContent>
-              {pilots.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="tr-pilot">Pilot in command</Label>
+            <Select value={value.pilotId} onValueChange={(pilotId) => setValue((v) => ({ ...v, pilotId }))}>
+              <SelectTrigger id="tr-pilot">
+                <SelectValue placeholder="Select a pilot" />
+              </SelectTrigger>
+              <SelectContent>
+                {pilots
+                  .filter((p) => p.id !== value.secondPilotId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tr-second-pilot">Second in command</Label>
+            <Select value={value.secondPilotId} onValueChange={(secondPilotId) => setValue((v) => ({ ...v, secondPilotId }))}>
+              <SelectTrigger id="tr-second-pilot">
+                <SelectValue placeholder="Select a pilot" />
+              </SelectTrigger>
+              <SelectContent>
+                {pilots
+                  .filter((p) => p.id !== value.pilotId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="rounded-md border p-3">
           <div className="mb-2 text-xs font-medium text-muted-foreground">Takeoffs &amp; landings</div>
+          <div className="mb-3 grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-takeoff-time" className="text-xs font-normal">
+                Takeoff time (UTC decimal)
+              </Label>
+              <Input
+                id="tr-takeoff-time"
+                value={value.takeoffTime}
+                onChange={(e) => setValue((v) => applyComputedHours({ ...v, takeoffTime: e.target.value }))}
+                placeholder="e.g. 14.3"
+              />
+              {takeoffInvalid && <p className="text-xs text-destructive">Format: HH.T, e.g. 14.3 for 14:18</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-landing-time" className="text-xs font-normal">
+                Landing time (UTC decimal)
+              </Label>
+              <Input
+                id="tr-landing-time"
+                value={value.landingTime}
+                onChange={(e) => setValue((v) => applyComputedHours({ ...v, landingTime: e.target.value }))}
+                placeholder="e.g. 16.5"
+              />
+              {landingInvalid && <p className="text-xs text-destructive">Format: HH.T, e.g. 16.5 for 16:30</p>}
+            </div>
+          </div>
+          {hoursAutoComputed && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              Duty day will default to {formatDecimalHour(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
+              {formatDecimalHour(((landingDecimal ?? 0) + 0.5) % 24)} UTC for each pilot on this trip (editable on the Duty Days page).
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="tr-day-to" className="text-xs font-normal">

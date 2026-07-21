@@ -100,7 +100,7 @@ export function evaluateDutyEntry(
 export async function getRolling30DayFlightHours(pilotId: string, asOfDate: Date): Promise<number> {
   const start = new Date(asOfDate.getTime() - 30 * 24 * 60 * 60 * 1000);
   const agg = await prisma.trip.aggregate({
-    where: { pilotId, date: { gte: start, lte: asOfDate } },
+    where: { OR: [{ pilotId }, { secondPilotId: pilotId }], date: { gte: start, lte: asOfDate } },
     _sum: { hours: true },
   });
   return toNumber(agg._sum.hours);
@@ -172,6 +172,51 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
     });
   }
   return result;
+}
+
+/**
+ * Auto-creates or widens a pilot's duty day log for a trip date from computed
+ * report/duty-end times. If the pilot already has a log for that date (e.g. a
+ * second leg the same day), the window widens to cover both instead of
+ * creating a conflicting second entry (DutyDayLog is unique per pilot+date).
+ * The result stays editable afterward from the Duty Days page.
+ */
+export async function upsertDutyDayLogFromTrip(
+  pilotId: string,
+  tripDate: Date,
+  computedReportTime: Date,
+  computedDutyEndTime: Date
+): Promise<void> {
+  const date = new Date(Date.UTC(tripDate.getUTCFullYear(), tripDate.getUTCMonth(), tripDate.getUTCDate()));
+
+  const existing = await prisma.dutyDayLog.findUnique({ where: { pilotId_date: { pilotId, date } } });
+
+  if (existing) {
+    const reportTime = existing.reportTime < computedReportTime ? existing.reportTime : computedReportTime;
+    const dutyEndTime = existing.dutyEndTime > computedDutyEndTime ? existing.dutyEndTime : computedDutyEndTime;
+    if (reportTime.getTime() !== existing.reportTime.getTime() || dutyEndTime.getTime() !== existing.dutyEndTime.getTime()) {
+      await prisma.dutyDayLog.update({ where: { id: existing.id }, data: { reportTime, dutyEndTime } });
+    }
+    return;
+  }
+
+  const priorLog = await prisma.dutyDayLog.findFirst({
+    where: { pilotId, date: { lt: date } },
+    orderBy: { date: "desc" },
+  });
+  const restPeriodBeforeHours = priorLog
+    ? Math.max(0, (computedReportTime.getTime() - priorLog.dutyEndTime.getTime()) / (1000 * 60 * 60))
+    : 0;
+
+  await prisma.dutyDayLog.create({
+    data: {
+      pilotId,
+      date,
+      reportTime: computedReportTime,
+      dutyEndTime: computedDutyEndTime,
+      restPeriodBeforeHours,
+    },
+  });
 }
 
 export interface PilotDutyStatus {

@@ -30,6 +30,10 @@ export interface TripDto {
   notes: string | null;
   pilotId: string | null;
   pilotName: string | null;
+  secondPilotId: string | null;
+  secondPilotName: string | null;
+  takeoffTime: number | null;
+  landingTime: number | null;
   dayTakeoffs: number;
   dayLandings: number;
   nightTakeoffs: number;
@@ -51,21 +55,26 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
       ...(filters.from || filters.to
         ? { date: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lt: filters.to } : {}) } }
         : {}),
-      ...(filters.pilotId ? { pilotId: filters.pilotId } : {}),
       ...(filters.passengerId ? { passengers: { some: { passengerId: filters.passengerId } } } : {}),
-      ...(filters.search
-        ? {
-            OR: [
-              { departureAirport: { contains: filters.search, mode: "insensitive" } },
-              { arrivalAirport: { contains: filters.search, mode: "insensitive" } },
-              { routeLabel: { contains: filters.search, mode: "insensitive" } },
-              { purpose: { contains: filters.search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      AND: [
+        ...(filters.pilotId ? [{ OR: [{ pilotId: filters.pilotId }, { secondPilotId: filters.pilotId }] }] : []),
+        ...(filters.search
+          ? [
+              {
+                OR: [
+                  { departureAirport: { contains: filters.search, mode: "insensitive" as const } },
+                  { arrivalAirport: { contains: filters.search, mode: "insensitive" as const } },
+                  { routeLabel: { contains: filters.search, mode: "insensitive" as const } },
+                  { purpose: { contains: filters.search, mode: "insensitive" as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     include: {
       pilot: true,
+      secondPilot: true,
       passengers: { include: { passenger: true } },
     },
     orderBy: { date: "desc" },
@@ -86,12 +95,26 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
     notes: t.notes,
     pilotId: t.pilotId,
     pilotName: t.pilot?.name ?? null,
+    secondPilotId: t.secondPilotId,
+    secondPilotName: t.secondPilot?.name ?? null,
+    takeoffTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : null,
+    landingTime: t.landingTime !== null ? toNumber(t.landingTime) : null,
     dayTakeoffs: t.dayTakeoffs,
     dayLandings: t.dayLandings,
     nightTakeoffs: t.nightTakeoffs,
     nightLandings: t.nightLandings,
     passengers: t.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
   }));
+}
+
+export interface TripExportPresetDto {
+  id: string;
+  name: string;
+  columns: string[];
+}
+
+export async function getTripExportPresets(): Promise<TripExportPresetDto[]> {
+  return prisma.tripExportPreset.findMany({ orderBy: { name: "asc" } });
 }
 
 export async function getPassengerOptions() {

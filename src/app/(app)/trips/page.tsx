@@ -5,7 +5,7 @@ import { TripFilters } from "@/components/trips/trip-filters";
 import { TripsView } from "@/components/trips/trips-view";
 import { PassengerPicker } from "@/components/trips/passenger-picker";
 import { EmptyState } from "@/components/shared/empty-state";
-import { getTrips, getTripHoursAndMiles, getPassengerOptions, getPassengerHistory } from "@/lib/trips";
+import { getTrips, getTripHoursAndMiles, getPassengerOptions, getPassengerHistory, getTripExportPresets } from "@/lib/trips";
 import { getPilots } from "@/lib/settings";
 import { getMtdRange, getYtdRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
@@ -44,12 +44,13 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
     range = undefined;
   }
 
-  const [trips, pilots, passengerOptions, ytdFlying, mtdFlying] = await Promise.all([
+  const [trips, pilots, passengerOptions, ytdFlying, mtdFlying, exportPresets] = await Promise.all([
     getTrips({ from: range?.start, to: range?.end, pilotId: params.pilotId, search: params.q }),
     getPilots(),
     getPassengerOptions(),
     getTripHoursAndMiles(getYtdRange(now, fiscalStartMonth)),
     getTripHoursAndMiles(getMtdRange(now)),
+    getTripExportPresets(),
   ]);
 
   const activeTab = params.tab === "passengers" ? "passengers" : "trips";
@@ -77,7 +78,7 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
       {activeTab === "trips" ? (
         <>
           <TripFilters pilots={pilots} />
-          <TripsView trips={trips} pilots={pilots} passengerOptions={passengerOptions} />
+          <TripsView trips={trips} pilots={pilots} passengerOptions={passengerOptions} exportPresets={exportPresets} />
         </>
       ) : (
         <div className="space-y-5">

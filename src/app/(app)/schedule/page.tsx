@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { ScheduleView } from "@/components/schedule/schedule-view";
+import { SchedulePdfDialog } from "@/components/schedule/schedule-pdf-dialog";
 import { getCalendarMonth } from "@/lib/schedule";
 import { getEventCategories, getPilots } from "@/lib/settings";
 
@@ -55,11 +56,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
                 </Button>
               </Link>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <a href={`/api/reports/schedule/pdf?year=${year}&month=${month + 1}`} target="_blank" rel="noreferrer">
-                <FileText /> Export PDF
-              </a>
-            </Button>
+            <SchedulePdfDialog currentYear={year} currentMonth={month} />
           </div>
         }
       />

@@ -78,7 +78,8 @@ model Pilot {
   archived      Boolean         @default(false)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  trips         Trip[]
+  trips         Trip[]          @relation("TripPilotInCommand")
+  secondPilotTrips Trip[]       @relation("TripSecondInCommand")
   dutyDayLogs   DutyDayLog[]
   calendarEvents CalendarEvent[]
 }
@@ -109,7 +110,12 @@ model Trip {
   purpose           String?
   notes             String?
   pilotId           String?
-  pilot             Pilot?          @relation(fields: [pilotId], references: [id], onDelete: SetNull)
+  pilot             Pilot?          @relation("TripPilotInCommand", fields: [pilotId], references: [id], onDelete: SetNull)
+  secondPilotId     String?
+  secondPilot       Pilot?          @relation("TripSecondInCommand", fields: [secondPilotId], references: [id], onDelete: SetNull)
+  // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded up to the nearest 6 minutes.
+  takeoffTime       Decimal?        @db.Decimal(4, 1)
+  landingTime       Decimal?        @db.Decimal(4, 1)
   dayTakeoffs       Int             @default(0)
   dayLandings       Int             @default(0)
   nightTakeoffs     Int             @default(0)
@@ -121,6 +127,7 @@ model Trip {
 
   @@index([date])
   @@index([pilotId])
+  @@index([secondPilotId])
   @@index([status])
 }
 
@@ -194,6 +201,16 @@ model CalendarEvent {
 
   @@index([startDate])
   @@index([categoryId])
+}
+
+// Saved column selections for the Trips export (e.g. a "Client report" preset
+// vs a full internal export), so the picker doesn't need to be rebuilt each time.
+model TripExportPreset {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  columns   String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Singleton row holding the configurable CARS 604 / CAR 401.05(2) thresholds,

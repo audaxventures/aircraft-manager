@@ -2,25 +2,27 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Download, Plus, PlaneTakeoff } from "lucide-react";
+import { Plus, PlaneTakeoff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TripForm, type PilotOption, type TripFormValue } from "@/components/trips/trip-form";
+import { TripExportPanel } from "@/components/trips/trip-export-panel";
 import type { ComboboxOption } from "@/components/shared/multi-combobox";
-import { formatDate, formatHours, formatNumber } from "@/lib/format";
-import { toCsv, downloadCsv } from "@/lib/csv";
-import type { TripDto } from "@/lib/trips";
+import { formatDate, formatNumber } from "@/lib/format";
+import { formatDecimalHour } from "@/lib/flight-time";
+import type { TripDto, TripExportPresetDto } from "@/lib/trips";
 
 interface TripsViewProps {
   trips: TripDto[];
   pilots: PilotOption[];
   passengerOptions: ComboboxOption[];
+  exportPresets: TripExportPresetDto[];
 }
 
-function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
+function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsViewProps) {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<TripFormValue | null>(null);
 
@@ -43,6 +45,9 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
       purpose: trip.purpose ?? "",
       notes: trip.notes ?? "",
       pilotId: trip.pilotId ?? "",
+      secondPilotId: trip.secondPilotId ?? "",
+      takeoffTime: trip.takeoffTime !== null ? formatDecimalHour(trip.takeoffTime) : "",
+      landingTime: trip.landingTime !== null ? formatDecimalHour(trip.landingTime) : "",
       dayTakeoffs: String(trip.dayTakeoffs),
       dayLandings: String(trip.dayLandings),
       nightTakeoffs: String(trip.nightTakeoffs),
@@ -50,27 +55,6 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
       passengerIds: trip.passengers.map((p) => p.id),
     });
     setFormOpen(true);
-  }
-
-  function exportCsv() {
-    const csv = toCsv(trips, [
-      { header: "Date", accessor: (t) => formatDate(t.date) },
-      { header: "Departure", accessor: (t) => t.departureAirport },
-      { header: "Arrival", accessor: (t) => t.arrivalAirport },
-      { header: "Route", accessor: (t) => t.routeLabel },
-      { header: "Hours", accessor: (t) => t.hours },
-      { header: "Cycles", accessor: (t) => t.cycles },
-      { header: "Miles", accessor: (t) => t.miles },
-      { header: "Pilot", accessor: (t) => t.pilotName },
-      { header: "Day T/O", accessor: (t) => t.dayTakeoffs },
-      { header: "Night T/O", accessor: (t) => t.nightTakeoffs },
-      { header: "Day LDG", accessor: (t) => t.dayLandings },
-      { header: "Night LDG", accessor: (t) => t.nightLandings },
-      { header: "Passengers", accessor: (t) => t.passengers.map((p) => p.name).join("; ") },
-      { header: "Purpose", accessor: (t) => t.purpose },
-      { header: "Notes", accessor: (t) => t.notes },
-    ]);
-    downloadCsv(`trips-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
   const columns: ColumnDef<TripDto>[] = [
@@ -104,7 +88,8 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
       header: () => <div className="w-full text-right">Miles</div>,
       cell: ({ row }) => <div className="text-right tabular-nums">{formatNumber(row.original.miles)}</div>,
     },
-    { accessorKey: "pilotName", header: "Pilot", cell: ({ row }) => row.original.pilotName || "—" },
+    { accessorKey: "pilotName", header: "PIC", cell: ({ row }) => row.original.pilotName || "—" },
+    { accessorKey: "secondPilotName", header: "SIC", cell: ({ row }) => row.original.secondPilotName || "—" },
     {
       accessorKey: "passengers",
       header: "Passengers",
@@ -120,9 +105,7 @@ function TripsView({ trips, pilots, passengerOptions }: TripsViewProps) {
   return (
     <div>
       <div className="mb-3 flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={exportCsv} disabled={trips.length === 0}>
-          <Download /> Export CSV
-        </Button>
+        <TripExportPanel trips={trips} presets={exportPresets} />
         <Button size="sm" onClick={openNew}>
           <Plus /> Add trip
         </Button>

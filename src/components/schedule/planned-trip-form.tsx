@@ -30,6 +30,7 @@ function PlannedTripForm({ open, onOpenChange, pilots, defaultDate }: PlannedTri
   const [departureAirport, setDepartureAirport] = React.useState("");
   const [arrivalAirport, setArrivalAirport] = React.useState("");
   const [pilotId, setPilotId] = React.useState("");
+  const [secondPilotId, setSecondPilotId] = React.useState("");
   const [notes, setNotes] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
@@ -41,6 +42,7 @@ function PlannedTripForm({ open, onOpenChange, pilots, defaultDate }: PlannedTri
       setDepartureAirport("");
       setArrivalAirport("");
       setPilotId("");
+      setSecondPilotId("");
       setNotes("");
       setError(null);
     }
@@ -56,6 +58,7 @@ function PlannedTripForm({ open, onOpenChange, pilots, defaultDate }: PlannedTri
       departureAirport,
       arrivalAirport,
       pilotId,
+      secondPilotId,
       notes,
     });
     setSaving(false);
@@ -107,21 +110,43 @@ function PlannedTripForm({ open, onOpenChange, pilots, defaultDate }: PlannedTri
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="pt-pilot">Pilot (optional)</Label>
-          <Select value={pilotId || "none"} onValueChange={(v) => setPilotId(v === "none" ? "" : v)}>
-            <SelectTrigger id="pt-pilot">
-              <SelectValue placeholder="No pilot" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">—</SelectItem>
-              {pilots.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="pt-pilot">Pilot 1</Label>
+            <Select value={pilotId || "none"} onValueChange={(v) => setPilotId(v === "none" ? "" : v)}>
+              <SelectTrigger id="pt-pilot">
+                <SelectValue placeholder="No pilot" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {pilots
+                  .filter((p) => p.id !== secondPilotId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pt-second-pilot">Pilot 2</Label>
+            <Select value={secondPilotId || "none"} onValueChange={(v) => setSecondPilotId(v === "none" ? "" : v)}>
+              <SelectTrigger id="pt-second-pilot">
+                <SelectValue placeholder="No pilot" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {pilots
+                  .filter((p) => p.id !== pilotId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-1.5">

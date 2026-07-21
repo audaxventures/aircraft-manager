@@ -51,20 +51,26 @@ const plannedTripSchema = z
     departureAirport: z.string().min(1, "Departure is required"),
     arrivalAirport: z.string().min(1, "Arrival is required"),
     pilotId: z.string().optional(),
+    secondPilotId: z.string().optional(),
     notes: z.string().optional(),
   })
-  .refine((d) => !d.endDate || d.endDate >= d.date, { message: "End date must be on or after the start date", path: ["endDate"] });
+  .refine((d) => !d.endDate || d.endDate >= d.date, { message: "End date must be on or after the start date", path: ["endDate"] })
+  .refine((d) => !d.pilotId || !d.secondPilotId || d.pilotId !== d.secondPilotId, {
+    message: "Pilot 1 and Pilot 2 must be different pilots",
+    path: ["secondPilotId"],
+  });
 
 export async function savePlannedTrip(input: unknown): Promise<ActionResult> {
   const parsed = plannedTripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { endDate, pilotId, notes, ...rest } = parsed.data;
+  const { endDate, pilotId, secondPilotId, notes, ...rest } = parsed.data;
   const trip = await prisma.trip.create({
     data: {
       ...rest,
       endDate: endDate ?? null,
       pilotId: pilotId || null,
+      secondPilotId: secondPilotId || null,
       notes: notes || null,
       status: "PLANNED",
       routeLabel: `${rest.departureAirport} - ${rest.arrivalAirport}`,
