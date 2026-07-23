@@ -40,7 +40,7 @@ export async function saveDutyDayLog(input: unknown): Promise<ActionResult> {
       logId = created.id;
     }
   } catch {
-    return { ok: false, error: "A duty log for this pilot on this date already exists." };
+    return { ok: false, error: "A duty log of this type for this pilot on this date already exists." };
   }
 
   revalidatePath("/duty-days");

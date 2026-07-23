@@ -67,6 +67,23 @@ export function computeFlightDutyHours(reportTime: Date, dutyEndTime: Date): num
   return Math.max(0, (dutyEndTime.getTime() - reportTime.getTime()) / (1000 * 60 * 60));
 }
 
+/**
+ * CARS 604 flight duty time is the total time on duty for the calendar day,
+ * not per entry — a pilot's Flight and Admin duty log entries on the same
+ * date combine into one duty-day total for limit checks and display.
+ */
+function combinedDutyHoursByPilotDate(
+  logs: { pilotId: string; date: Date; reportTime: Date; dutyEndTime: Date }[]
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const log of logs) {
+    const key = `${log.pilotId}:${log.date.getTime()}`;
+    const hours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
+    totals.set(key, (totals.get(key) ?? 0) + hours);
+  }
+  return totals;
+}
+
 export interface DutyEvaluation {
   flightDutyHours: number;
   rolling30DayHours: number;
@@ -170,9 +187,11 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
     orderBy: { date: "desc" },
   });
 
+  const dailyTotals = combinedDutyHoursByPilotDate(logs);
+
   const result: DutyDayLogDto[] = [];
   for (const log of logs) {
-    const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
+    const flightDutyHours = dailyTotals.get(`${log.pilotId}:${log.date.getTime()}`)!;
     const [rolling30DayHours, rolling90DayHours, rolling12MonthHours] = await Promise.all([
       getRolling30DayFlightHours(log.pilotId, log.date),
       getRolling90DayFlightHours(log.pilotId, log.date),
@@ -209,10 +228,11 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
 }
 
 /**
- * Auto-creates or widens a pilot's duty day log for a trip date from computed
- * report/duty-end times. If the pilot already has a log for that date (e.g. a
- * second leg the same day), the window widens to cover both instead of
- * creating a conflicting second entry (DutyDayLog is unique per pilot+date).
+ * Auto-creates or widens a pilot's FLIGHT duty day log for a trip date from
+ * computed report/duty-end times. If the pilot already has a flight log for
+ * that date (e.g. a second leg the same day), the window widens to cover both
+ * instead of creating a conflicting second entry (DutyDayLog is unique per
+ * pilot+date+dutyType, so a same-day Admin entry is unaffected).
  * The result stays editable afterward from the Duty Days page.
  */
 export async function upsertDutyDayLogFromTrip(
@@ -223,7 +243,9 @@ export async function upsertDutyDayLogFromTrip(
 ): Promise<void> {
   const date = new Date(Date.UTC(tripDate.getUTCFullYear(), tripDate.getUTCMonth(), tripDate.getUTCDate()));
 
-  const existing = await prisma.dutyDayLog.findUnique({ where: { pilotId_date: { pilotId, date } } });
+  const existing = await prisma.dutyDayLog.findUnique({
+    where: { pilotId_date_dutyType: { pilotId, date, dutyType: "FLIGHT" } },
+  });
 
   if (existing) {
     const reportTime = existing.reportTime < computedReportTime ? existing.reportTime : computedReportTime;
@@ -246,6 +268,7 @@ export async function upsertDutyDayLogFromTrip(
     data: {
       pilotId,
       date,
+      dutyType: "FLIGHT",
       reportTime: computedReportTime,
       dutyEndTime: computedDutyEndTime,
       restPeriodBeforeHours,
@@ -298,9 +321,13 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       continue;
     }
 
+    const dailyTotals = combinedDutyHoursByPilotDate(logs);
+    const evaluatedDates = new Set<number>();
     let activeFdtViolations = 0;
     for (const log of logs) {
-      const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
+      if (evaluatedDates.has(log.date.getTime())) continue;
+      evaluatedDates.add(log.date.getTime());
+      const flightDutyHours = dailyTotals.get(`${log.pilotId}:${log.date.getTime()}`)!;
       const logRolling30 = await getRolling30DayFlightHours(pilot.id, log.date);
       const evaluation = evaluateDutyEntry(
         { restPeriodBeforeHours: toNumber(log.restPeriodBeforeHours), splitDutyApplied: log.splitDutyApplied, flightDutyHours },

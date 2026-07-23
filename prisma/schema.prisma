@@ -170,7 +170,7 @@ model DutyDayLog {
   updatedAt               DateTime    @updatedAt
 
   @@index([pilotId, date])
-  @@unique([pilotId, date])
+  @@unique([pilotId, date, dutyType])
 }
 
 model Attachment {
