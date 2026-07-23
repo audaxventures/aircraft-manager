@@ -261,5 +261,11 @@ model RegulatorySettings {
   currencyTakeoffsRequired      Int      @default(5)
   currencyLandingsRequired      Int      @default(5)
   currencyPeriodMonths          Int      @default(6)
+  // Company/regulatory caps on rolling flight time per pilot, shown on the
+  // Duty Days pilot cards (distinct from rolling30DayFlightHoursLimit above,
+  // which only governs CARS 604 duty-day extension eligibility).
+  flightHours30DayLimit         Decimal  @default(120) @db.Decimal(6, 2)
+  flightHours90DayLimit         Decimal  @default(300) @db.Decimal(6, 2)
+  flightHours12MonthLimit       Decimal  @default(1200) @db.Decimal(6, 2)
   updatedAt                     DateTime @updatedAt
 }

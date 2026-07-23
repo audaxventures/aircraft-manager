@@ -13,6 +13,9 @@ export interface RegulatoryThresholds {
   currencyTakeoffsRequired: number;
   currencyLandingsRequired: number;
   currencyPeriodMonths: number;
+  flightHours30DayLimit: number;
+  flightHours90DayLimit: number;
+  flightHours12MonthLimit: number;
 }
 
 export async function getRegulatoryThresholds(): Promise<RegulatoryThresholds & { id: string }> {
@@ -37,6 +40,9 @@ function toThresholds(s: {
   currencyTakeoffsRequired: number;
   currencyLandingsRequired: number;
   currencyPeriodMonths: number;
+  flightHours30DayLimit: unknown;
+  flightHours90DayLimit: unknown;
+  flightHours12MonthLimit: unknown;
 }) {
   return {
     id: s.id,
@@ -51,6 +57,9 @@ function toThresholds(s: {
     currencyTakeoffsRequired: s.currencyTakeoffsRequired,
     currencyLandingsRequired: s.currencyLandingsRequired,
     currencyPeriodMonths: s.currencyPeriodMonths,
+    flightHours30DayLimit: toNumber(s.flightHours30DayLimit),
+    flightHours90DayLimit: toNumber(s.flightHours90DayLimit),
+    flightHours12MonthLimit: toNumber(s.flightHours12MonthLimit),
   };
 }
 
@@ -97,13 +106,26 @@ export function evaluateDutyEntry(
   };
 }
 
-export async function getRolling30DayFlightHours(pilotId: string, asOfDate: Date): Promise<number> {
-  const start = new Date(asOfDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+async function getRollingFlightHours(pilotId: string, asOfDate: Date, days: number): Promise<number> {
+  const start = new Date(asOfDate.getTime() - days * 24 * 60 * 60 * 1000);
   const agg = await prisma.trip.aggregate({
     where: { OR: [{ pilotId }, { secondPilotId: pilotId }], date: { gte: start, lte: asOfDate } },
     _sum: { hours: true },
   });
   return toNumber(agg._sum.hours);
+}
+
+export async function getRolling30DayFlightHours(pilotId: string, asOfDate: Date): Promise<number> {
+  return getRollingFlightHours(pilotId, asOfDate, 30);
+}
+
+export async function getRolling90DayFlightHours(pilotId: string, asOfDate: Date): Promise<number> {
+  return getRollingFlightHours(pilotId, asOfDate, 90);
+}
+
+/** Rolling 365-day window, not a calendar year — "12-month" here means the trailing 365 days from asOfDate. */
+export async function getRolling12MonthFlightHours(pilotId: string, asOfDate: Date): Promise<number> {
+  return getRollingFlightHours(pilotId, asOfDate, 365);
 }
 
 export interface DutyDayLogDto {
@@ -224,6 +246,8 @@ export interface PilotDutyStatus {
   pilotName: string;
   lastDutyDate: Date | null;
   rolling30DayHours: number;
+  rolling90DayHours: number;
+  rolling12MonthHours: number;
   lastQualifyingRestDate: Date | null;
   daysSinceQualifyingRest: number | null;
   restViolation: boolean;
@@ -238,17 +262,21 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
 
   const statuses: PilotDutyStatus[] = [];
   for (const pilot of pilots) {
-    const logs = await prisma.dutyDayLog.findMany({
-      where: { pilotId: pilot.id },
-      orderBy: { date: "desc" },
-    });
+    const [logs, rolling30DayHours, rolling90DayHours, rolling12MonthHours] = await Promise.all([
+      prisma.dutyDayLog.findMany({ where: { pilotId: pilot.id }, orderBy: { date: "desc" } }),
+      getRolling30DayFlightHours(pilot.id, now),
+      getRolling90DayFlightHours(pilot.id, now),
+      getRolling12MonthFlightHours(pilot.id, now),
+    ]);
 
     if (logs.length === 0) {
       statuses.push({
         pilotId: pilot.id,
         pilotName: pilot.name,
         lastDutyDate: null,
-        rolling30DayHours: 0,
+        rolling30DayHours,
+        rolling90DayHours,
+        rolling12MonthHours,
         lastQualifyingRestDate: null,
         daysSinceQualifyingRest: null,
         restViolation: false,
@@ -257,8 +285,6 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       });
       continue;
     }
-
-    const rolling30DayHours = await getRolling30DayFlightHours(pilot.id, now);
 
     let activeFdtViolations = 0;
     for (const log of logs) {
@@ -287,6 +313,8 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       pilotName: pilot.name,
       lastDutyDate: logs[0].date,
       rolling30DayHours,
+      rolling90DayHours,
+      rolling12MonthHours,
       lastQualifyingRestDate,
       daysSinceQualifyingRest,
       restViolation,

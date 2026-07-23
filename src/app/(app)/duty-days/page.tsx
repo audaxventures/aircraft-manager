@@ -26,7 +26,12 @@ export default async function DutyDaysPage() {
         </p>
       </div>
 
-      <DutyStatusCards statuses={statuses} rolling30DayLimit={thresholds.rolling30DayFlightHoursLimit} />
+      <DutyStatusCards
+        statuses={statuses}
+        flightHours30DayLimit={thresholds.flightHours30DayLimit}
+        flightHours90DayLimit={thresholds.flightHours90DayLimit}
+        flightHours12MonthLimit={thresholds.flightHours12MonthLimit}
+      />
       <DutyLogView logs={logs} pilots={pilots} />
     </div>
   );

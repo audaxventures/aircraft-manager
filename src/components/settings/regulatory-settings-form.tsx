@@ -23,6 +23,9 @@ interface RegulatorySettings {
   currencyTakeoffsRequired: number;
   currencyLandingsRequired: number;
   currencyPeriodMonths: number;
+  flightHours30DayLimit: number;
+  flightHours90DayLimit: number;
+  flightHours12MonthLimit: number;
 }
 
 function Field({
@@ -60,6 +63,9 @@ function RegulatorySettingsForm({ settings }: { settings: RegulatorySettings }) 
     currencyTakeoffsRequired: String(settings.currencyTakeoffsRequired),
     currencyLandingsRequired: String(settings.currencyLandingsRequired),
     currencyPeriodMonths: String(settings.currencyPeriodMonths),
+    flightHours30DayLimit: String(toNumber(settings.flightHours30DayLimit)),
+    flightHours90DayLimit: String(toNumber(settings.flightHours90DayLimit)),
+    flightHours12MonthLimit: String(toNumber(settings.flightHours12MonthLimit)),
   });
   const [saving, setSaving] = React.useState(false);
 
@@ -153,6 +159,30 @@ function RegulatorySettingsForm({ settings }: { settings: RegulatorySettings }) 
             value={form.currencyPeriodMonths}
             onChange={set("currencyPeriodMonths")}
             suffix="months"
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-medium text-foreground">Pilot flight-hour limits (rolling)</h3>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Field
+            label="30-day flight time limit"
+            value={form.flightHours30DayLimit}
+            onChange={set("flightHours30DayLimit")}
+            suffix="hrs"
+          />
+          <Field
+            label="90-day flight time limit"
+            value={form.flightHours90DayLimit}
+            onChange={set("flightHours90DayLimit")}
+            suffix="hrs"
+          />
+          <Field
+            label="12-month flight time limit"
+            value={form.flightHours12MonthLimit}
+            onChange={set("flightHours12MonthLimit")}
+            suffix="hrs"
           />
         </div>
       </div>

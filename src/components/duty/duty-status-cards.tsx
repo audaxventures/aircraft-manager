@@ -4,7 +4,17 @@ import { cn } from "@/lib/utils";
 import { formatDate, formatHours } from "@/lib/format";
 import type { PilotDutyStatus } from "@/lib/duty";
 
-function DutyStatusCards({ statuses, rolling30DayLimit }: { statuses: PilotDutyStatus[]; rolling30DayLimit: number }) {
+function DutyStatusCards({
+  statuses,
+  flightHours30DayLimit,
+  flightHours90DayLimit,
+  flightHours12MonthLimit,
+}: {
+  statuses: PilotDutyStatus[];
+  flightHours30DayLimit: number;
+  flightHours90DayLimit: number;
+  flightHours12MonthLimit: number;
+}) {
   if (statuses.length === 0) return null;
 
   const sorted = [...statuses].sort((a, b) => {
@@ -37,9 +47,35 @@ function DutyStatusCards({ statuses, rolling30DayLimit }: { statuses: PilotDutyS
             <dl className="mt-3 space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">30-day flight time</dt>
-                <dd className="tabular-nums">
+                <dd
+                  className={cn(
+                    "tabular-nums font-medium",
+                    s.rolling30DayHours > flightHours30DayLimit ? "text-destructive" : "text-success"
+                  )}
+                >
                   {formatHours(s.rolling30DayHours)}
-                  {s.rolling30DayHours > rolling30DayLimit && <span className="ml-1 text-destructive">(over {rolling30DayLimit})</span>}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">90-day flight time</dt>
+                <dd
+                  className={cn(
+                    "tabular-nums font-medium",
+                    s.rolling90DayHours > flightHours90DayLimit ? "text-destructive" : "text-success"
+                  )}
+                >
+                  {formatHours(s.rolling90DayHours)}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">12-month flight time</dt>
+                <dd
+                  className={cn(
+                    "tabular-nums font-medium",
+                    s.rolling12MonthHours > flightHours12MonthLimit ? "text-destructive" : "text-success"
+                  )}
+                >
+                  {formatHours(s.rolling12MonthHours)}
                 </dd>
               </div>
               <div className="flex justify-between">

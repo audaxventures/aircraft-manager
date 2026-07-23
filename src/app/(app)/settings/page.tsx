@@ -86,6 +86,9 @@ export default async function SettingsPage() {
               currencyTakeoffsRequired: regSettings.currencyTakeoffsRequired,
               currencyLandingsRequired: regSettings.currencyLandingsRequired,
               currencyPeriodMonths: regSettings.currencyPeriodMonths,
+              flightHours30DayLimit: toNumber(regSettings.flightHours30DayLimit),
+              flightHours90DayLimit: toNumber(regSettings.flightHours90DayLimit),
+              flightHours12MonthLimit: toNumber(regSettings.flightHours12MonthLimit),
             }}
           />
         </TabsContent>

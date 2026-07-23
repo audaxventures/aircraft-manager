@@ -191,6 +191,9 @@ const regulatorySettingsSchema = z.object({
   currencyTakeoffsRequired: z.coerce.number().int().positive(),
   currencyLandingsRequired: z.coerce.number().int().positive(),
   currencyPeriodMonths: z.coerce.number().int().positive(),
+  flightHours30DayLimit: z.coerce.number().positive(),
+  flightHours90DayLimit: z.coerce.number().positive(),
+  flightHours12MonthLimit: z.coerce.number().positive(),
 });
 
 export async function saveRegulatorySettings(input: unknown): Promise<ActionResult> {
