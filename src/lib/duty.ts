@@ -67,23 +67,6 @@ export function computeFlightDutyHours(reportTime: Date, dutyEndTime: Date): num
   return Math.max(0, (dutyEndTime.getTime() - reportTime.getTime()) / (1000 * 60 * 60));
 }
 
-/**
- * CARS 604 flight duty time is the total time on duty for the calendar day,
- * not per entry — a pilot's Flight and Admin duty log entries on the same
- * date combine into one duty-day total for limit checks and display.
- */
-function combinedDutyHoursByPilotDate(
-  logs: { pilotId: string; date: Date; reportTime: Date; dutyEndTime: Date }[]
-): Map<string, number> {
-  const totals = new Map<string, number>();
-  for (const log of logs) {
-    const key = `${log.pilotId}:${log.date.getTime()}`;
-    const hours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
-    totals.set(key, (totals.get(key) ?? 0) + hours);
-  }
-  return totals;
-}
-
 export interface DutyEvaluation {
   flightDutyHours: number;
   rolling30DayHours: number;
@@ -187,11 +170,9 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
     orderBy: { date: "desc" },
   });
 
-  const dailyTotals = combinedDutyHoursByPilotDate(logs);
-
   const result: DutyDayLogDto[] = [];
   for (const log of logs) {
-    const flightDutyHours = dailyTotals.get(`${log.pilotId}:${log.date.getTime()}`)!;
+    const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
     const [rolling30DayHours, rolling90DayHours, rolling12MonthHours] = await Promise.all([
       getRolling30DayFlightHours(log.pilotId, log.date),
       getRolling90DayFlightHours(log.pilotId, log.date),
@@ -321,13 +302,9 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       continue;
     }
 
-    const dailyTotals = combinedDutyHoursByPilotDate(logs);
-    const evaluatedDates = new Set<number>();
     let activeFdtViolations = 0;
     for (const log of logs) {
-      if (evaluatedDates.has(log.date.getTime())) continue;
-      evaluatedDates.add(log.date.getTime());
-      const flightDutyHours = dailyTotals.get(`${log.pilotId}:${log.date.getTime()}`)!;
+      const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
       const logRolling30 = await getRolling30DayFlightHours(pilot.id, log.date);
       const evaluation = evaluateDutyEntry(
         { restPeriodBeforeHours: toNumber(log.restPeriodBeforeHours), splitDutyApplied: log.splitDutyApplied, flightDutyHours },
