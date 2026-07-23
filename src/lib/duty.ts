@@ -128,11 +128,14 @@ export async function getRolling12MonthFlightHours(pilotId: string, asOfDate: Da
   return getRollingFlightHours(pilotId, asOfDate, 365);
 }
 
+export type DutyLogType = "FLIGHT" | "ADMIN";
+
 export interface DutyDayLogDto {
   id: string;
   pilotId: string;
   pilotName: string;
   date: Date;
+  dutyType: DutyLogType;
   reportTime: Date;
   dutyEndTime: Date;
   flightDutyHours: number;
@@ -141,6 +144,8 @@ export interface DutyDayLogDto {
   splitDutyNote: string | null;
   notes: string | null;
   rolling30DayHours: number;
+  rolling90DayHours: number;
+  rolling12MonthHours: number;
   effectiveLimitHours: number;
   extensionReason: DutyEvaluation["extensionReason"];
   withinLimit: boolean;
@@ -168,7 +173,11 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
   const result: DutyDayLogDto[] = [];
   for (const log of logs) {
     const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
-    const rolling30DayHours = await getRolling30DayFlightHours(log.pilotId, log.date);
+    const [rolling30DayHours, rolling90DayHours, rolling12MonthHours] = await Promise.all([
+      getRolling30DayFlightHours(log.pilotId, log.date),
+      getRolling90DayFlightHours(log.pilotId, log.date),
+      getRolling12MonthFlightHours(log.pilotId, log.date),
+    ]);
     const restPeriodBeforeHours = toNumber(log.restPeriodBeforeHours);
     const evaluation = evaluateDutyEntry(
       { restPeriodBeforeHours, splitDutyApplied: log.splitDutyApplied, flightDutyHours },
@@ -180,6 +189,7 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
       pilotId: log.pilotId,
       pilotName: log.pilot.name,
       date: log.date,
+      dutyType: log.dutyType,
       reportTime: log.reportTime,
       dutyEndTime: log.dutyEndTime,
       flightDutyHours,
@@ -188,6 +198,8 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
       splitDutyNote: log.splitDutyNote,
       notes: log.notes,
       rolling30DayHours,
+      rolling90DayHours,
+      rolling12MonthHours,
       effectiveLimitHours: evaluation.effectiveLimitHours,
       extensionReason: evaluation.extensionReason,
       withinLimit: evaluation.withinLimit,

@@ -36,6 +36,7 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
     setEditing({
       id: log.id,
       pilotId: log.pilotId,
+      dutyType: log.dutyType,
       date: log.date.toISOString().slice(0, 10),
       reportTime: log.reportTime.toISOString().slice(11, 16),
       dutyEndTime: log.dutyEndTime.toISOString().slice(11, 16),
@@ -52,11 +53,14 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
     const csv = toCsv(logs, [
       { header: "Date", accessor: (l) => formatDate(l.date) },
       { header: "Pilot", accessor: (l) => l.pilotName },
+      { header: "Duty type", accessor: (l) => (l.dutyType === "ADMIN" ? "Admin" : "Flight") },
       { header: "Report time", accessor: (l) => formatUtcDecimalTime(l.reportTime) },
       { header: "Duty end time", accessor: (l) => formatUtcDecimalTime(l.dutyEndTime) },
       { header: "Flight duty time (hrs)", accessor: (l) => l.flightDutyHours.toFixed(1) },
       { header: "Rest before (hrs)", accessor: (l) => l.restPeriodBeforeHours.toFixed(1) },
       { header: "30-day flight time (hrs)", accessor: (l) => l.rolling30DayHours.toFixed(1) },
+      { header: "90-day flight time (hrs)", accessor: (l) => l.rolling90DayHours.toFixed(1) },
+      { header: "12-month flight time (hrs)", accessor: (l) => l.rolling12MonthHours.toFixed(1) },
       { header: "Applicable limit (hrs)", accessor: (l) => l.effectiveLimitHours.toFixed(1) },
       { header: "Pass/Fail", accessor: (l) => (l.withinLimit ? "PASS" : "FAIL") },
       { header: "Notes", accessor: (l) => l.notes },
@@ -67,6 +71,15 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
   const columns: ColumnDef<DutyDayLogDto>[] = [
     { accessorKey: "date", header: "Date", cell: ({ row }) => formatDate(row.original.date), sortingFn: "datetime" },
     { accessorKey: "pilotName", header: "Pilot" },
+    {
+      accessorKey: "dutyType",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant={row.original.dutyType === "ADMIN" ? "warning" : "outline"}>
+          {row.original.dutyType === "ADMIN" ? "Admin" : "Flight"}
+        </Badge>
+      ),
+    },
     { accessorKey: "reportTime", header: "Report (UTC)", cell: ({ row }) => formatDecimalHour(dateToDecimalHour(row.original.reportTime)) },
     { accessorKey: "dutyEndTime", header: "Duty end (UTC)", cell: ({ row }) => formatDecimalHour(dateToDecimalHour(row.original.dutyEndTime)) },
     {

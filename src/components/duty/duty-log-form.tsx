@@ -24,6 +24,7 @@ export interface PilotOption {
 export interface DutyLogFormValue {
   id: string;
   pilotId: string;
+  dutyType: "FLIGHT" | "ADMIN";
   date: string;
   reportTime: string;
   dutyEndTime: string;
@@ -38,6 +39,7 @@ function emptyValue(): DutyLogFormValue {
   return {
     id: "",
     pilotId: "",
+    dutyType: "FLIGHT",
     date: new Date().toISOString().slice(0, 10),
     reportTime: "07:00",
     dutyEndTime: "18:00",
@@ -104,6 +106,7 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
     const result = await saveDutyDayLog({
       id: value.id || undefined,
       pilotId: value.pilotId,
+      dutyType: value.dutyType,
       date: value.date,
       reportTime: report.toISOString(),
       dutyEndTime: end.toISOString(),
@@ -170,6 +173,19 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="dl-type">Duty type</Label>
+          <Select value={value.dutyType} onValueChange={(dutyType) => setValue((v) => ({ ...v, dutyType: dutyType as "FLIGHT" | "ADMIN" }))}>
+            <SelectTrigger id="dl-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="FLIGHT">Flight time</SelectItem>
+              <SelectItem value="ADMIN">Admin time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="dl-date">Date</Label>
           <DateInput id="dl-date" value={value.date} onChange={(e) => setValue((v) => ({ ...v, date: e.target.value }))} required />
         </div>
@@ -192,7 +208,8 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
 
         {flightDutyHours !== null && (
           <div className="rounded-md bg-secondary px-3 py-2 text-sm">
-            Flight duty time: <span className="font-medium tabular-nums">{flightDutyHours.toFixed(1)} hrs</span>
+            {value.dutyType === "ADMIN" ? "Admin duty time" : "Flight duty time"}:{" "}
+            <span className="font-medium tabular-nums">{flightDutyHours.toFixed(1)} hrs</span>
           </div>
         )}
 

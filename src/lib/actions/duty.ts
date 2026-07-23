@@ -10,6 +10,7 @@ type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 const dutySchema = z.object({
   id: z.string().optional(),
   pilotId: z.string().min(1, "Pilot is required"),
+  dutyType: z.enum(["FLIGHT", "ADMIN"]).default("FLIGHT"),
   date: z.coerce.date(),
   reportTime: z.coerce.date(),
   dutyEndTime: z.coerce.date(),

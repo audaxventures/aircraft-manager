@@ -149,19 +149,25 @@ model TripPassenger {
   @@index([passengerId])
 }
 
+enum DutyLogType {
+  FLIGHT
+  ADMIN
+}
+
 model DutyDayLog {
-  id                      String   @id @default(cuid())
+  id                      String      @id @default(cuid())
   pilotId                 String
-  pilot                   Pilot    @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+  pilot                   Pilot       @relation(fields: [pilotId], references: [id], onDelete: Cascade)
   date                    DateTime
+  dutyType                DutyLogType @default(FLIGHT)
   reportTime              DateTime
   dutyEndTime             DateTime
-  restPeriodBeforeHours   Decimal  @db.Decimal(6, 2)
-  splitDutyApplied        Boolean  @default(false)
+  restPeriodBeforeHours   Decimal     @db.Decimal(6, 2)
+  splitDutyApplied        Boolean     @default(false)
   splitDutyNote           String?
   notes                   String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
 
   @@index([pilotId, date])
   @@unique([pilotId, date])
