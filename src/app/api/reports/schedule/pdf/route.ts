@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
     targets = monthsParam
       .split(",")
       .map(parseYearMonth)
-      .filter((t): t is { year: number; month: number } => t !== null);
+      .filter((t): t is { year: number; month: number } => t !== null)
+      .sort((a, b) => a.year - b.year || a.month - b.month);
   } else {
     const year = parseInt(searchParams.get("year") ?? String(now.getUTCFullYear()), 10);
     const month = parseInt(searchParams.get("month") ?? String(now.getUTCMonth() + 1), 10) - 1;

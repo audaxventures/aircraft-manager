@@ -54,8 +54,10 @@ function SchedulePdfDialog({ currentYear, currentMonth }: SchedulePdfDialogProps
   const months = Array.from(selected)
     .map((key) => {
       const [y, m] = key.split("-").map(Number);
-      return `${y}-${m + 1}`;
+      return { y, m };
     })
+    .sort((a, b) => a.y - b.y || a.m - b.m)
+    .map(({ y, m }) => `${y}-${m + 1}`)
     .join(",");
   const href = `/api/reports/schedule/pdf?months=${months}`;
 

@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: "row" },
   weekdayHeader: {
     width: "14.2857%",
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
     paddingVertical: 3,
@@ -22,23 +22,23 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: "14.2857%",
-    height: 62,
+    height: 70,
     borderRightWidth: 0.5,
     borderBottomWidth: 0.5,
     borderColor: "#d4d4d4",
-    padding: 2.5,
+    padding: 3,
     overflow: "hidden",
   },
   dayCellOutside: { backgroundColor: "#fafafa" },
-  dayNumber: { fontSize: 7, fontFamily: "Helvetica-Bold", marginBottom: 1.5, color: "#171717" },
+  dayNumber: { fontSize: 8.5, fontFamily: "Helvetica-Bold", marginBottom: 2, color: "#171717" },
   dayNumberOutside: { color: "#a3a3a3" },
-  itemRow: { flexDirection: "row", alignItems: "center", marginBottom: 1 },
-  itemDot: { width: 3.5, height: 3.5, borderRadius: 1.75, marginRight: 2 },
-  itemText: { fontSize: 5.5, flexShrink: 1 },
-  legendRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 8 },
-  legendItem: { flexDirection: "row", alignItems: "center", marginRight: 12, marginBottom: 4 },
+  itemRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 2 },
+  itemDot: { width: 4, height: 4, borderRadius: 2, marginRight: 2.5, marginTop: 2 },
+  itemText: { fontSize: 6.5, lineHeight: 1.15, flexGrow: 1, flexShrink: 1, flexBasis: 0 },
+  legendRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 6 },
+  legendItem: { flexDirection: "row", alignItems: "center", marginRight: 12, marginBottom: 3 },
   legendDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
-  legendText: { fontSize: 8, color: "#525252" },
+  legendText: { fontSize: 9, color: "#525252" },
 });
 
 function toKey(d: Date) {
@@ -113,13 +113,13 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                   return (
                     <View key={key} style={[styles.dayCell, inMonth ? {} : styles.dayCellOutside]}>
                       <Text style={[styles.dayNumber, inMonth ? {} : styles.dayNumberOutside]}>{day.getUTCDate()}</Text>
-                      {dayItems.slice(0, 3).map((item) => (
+                      {dayItems.slice(0, 2).map((item) => (
                         <View key={item.id} style={styles.itemRow}>
                           <View style={[styles.itemDot, { backgroundColor: item.color }]} />
                           <Text style={styles.itemText}>{item.title}</Text>
                         </View>
                       ))}
-                      {dayItems.length > 3 && <Text style={styles.itemText}>+{dayItems.length - 3} more</Text>}
+                      {dayItems.length > 2 && <Text style={styles.itemText}>+{dayItems.length - 2} more</Text>}
                     </View>
                   );
                 })}
