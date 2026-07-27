@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: "14.2857%",
-    height: 70,
+    height: 80,
     borderRightWidth: 0.5,
     borderBottomWidth: 0.5,
     borderColor: "#d4d4d4",
@@ -30,11 +30,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   dayCellOutside: { backgroundColor: "#fafafa" },
-  dayNumber: { fontSize: 8.5, fontFamily: "Helvetica-Bold", marginBottom: 2, color: "#171717" },
+  dayNumber: { fontSize: 9.5, fontFamily: "Helvetica-Bold", marginBottom: 2, color: "#171717" },
   dayNumberOutside: { color: "#a3a3a3" },
   itemRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 2 },
-  itemDot: { width: 4, height: 4, borderRadius: 2, marginRight: 2.5, marginTop: 2 },
-  itemText: { fontSize: 6.5, lineHeight: 1.15, flexGrow: 1, flexShrink: 1, flexBasis: 0 },
+  itemDot: { width: 4.5, height: 4.5, borderRadius: 2.25, marginRight: 2.5, marginTop: 3 },
+  itemText: { fontSize: 8, lineHeight: 1.15, flexGrow: 1, flexShrink: 1, flexBasis: 0 },
   legendRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 6 },
   legendItem: { flexDirection: "row", alignItems: "center", marginRight: 12, marginBottom: 3 },
   legendDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
@@ -116,7 +116,9 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                       {dayItems.slice(0, 2).map((item) => (
                         <View key={item.id} style={styles.itemRow}>
                           <View style={[styles.itemDot, { backgroundColor: item.color }]} />
-                          <Text style={styles.itemText}>{item.title}</Text>
+                          <Text style={styles.itemText} hyphenationCallback={(word) => [word]}>
+                            {item.title}
+                          </Text>
                         </View>
                       ))}
                       {dayItems.length > 2 && <Text style={styles.itemText}>+{dayItems.length - 2} more</Text>}
