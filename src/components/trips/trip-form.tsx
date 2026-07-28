@@ -41,6 +41,8 @@ export interface TripFormValue {
   dayLandings: string;
   nightTakeoffs: string;
   nightLandings: string;
+  pilotInstrumentApproaches: string;
+  secondPilotInstrumentApproaches: string;
   passengerIds: string[];
 }
 
@@ -65,6 +67,8 @@ function emptyValue(): TripFormValue {
     dayLandings: "1",
     nightTakeoffs: "0",
     nightLandings: "0",
+    pilotInstrumentApproaches: "0",
+    secondPilotInstrumentApproaches: "0",
     passengerIds: [],
   };
 }
@@ -95,6 +99,9 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
 
   const isEditing = !!value.id;
   const isPlanned = isEditing && (!value.hours || parseFloat(value.hours) === 0);
+
+  const pilotName = pilots.find((p) => p.id === value.pilotId)?.name;
+  const secondPilotName = pilots.find((p) => p.id === value.secondPilotId)?.name;
 
   const cycles = parseInt(value.cycles || "0", 10);
   const takeoffSum = parseInt(value.dayTakeoffs || "0", 10) + parseInt(value.nightTakeoffs || "0", 10);
@@ -159,6 +166,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       dayLandings: value.dayLandings,
       nightTakeoffs: value.nightTakeoffs,
       nightLandings: value.nightLandings,
+      pilotInstrumentApproaches: value.pilotInstrumentApproaches,
+      secondPilotInstrumentApproaches: value.secondPilotInstrumentApproaches,
       passengerIds: value.passengerIds,
     });
     setSaving(false);
@@ -403,6 +412,38 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
               {landingMismatch && ` (landings: ${landingSum})`}.
             </p>
           )}
+        </div>
+
+        <div className="rounded-md border p-3">
+          <div className="mb-2 text-xs font-medium text-muted-foreground">Instrument approaches</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-pic-ia" className="text-xs font-normal">
+                {pilotName ?? "Pilot in command"}
+              </Label>
+              <Input
+                id="tr-pic-ia"
+                type="number"
+                min="0"
+                value={value.pilotInstrumentApproaches}
+                onChange={(e) => setValue((v) => ({ ...v, pilotInstrumentApproaches: e.target.value }))}
+                disabled={!value.pilotId}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-sic-ia" className="text-xs font-normal">
+                {secondPilotName ?? "Second in command"}
+              </Label>
+              <Input
+                id="tr-sic-ia"
+                type="number"
+                min="0"
+                value={value.secondPilotInstrumentApproaches}
+                onChange={(e) => setValue((v) => ({ ...v, secondPilotInstrumentApproaches: e.target.value }))}
+                disabled={!value.secondPilotId}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1.5">

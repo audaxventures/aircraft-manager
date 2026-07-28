@@ -16,9 +16,12 @@ export default async function CurrencyPage() {
       <div className="mb-6 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
         <p>
-          Currently configured as {thresholds.takeoffsRequired} takeoffs and {thresholds.landingsRequired} landings within{" "}
-          {thresholds.periodMonths} months (editable in Settings). Recency rules can change or vary by aircraft
-          category and class — verify against the current CARs before relying on this for compliance decisions.
+          Currently configured as {thresholds.dayTakeoffsRequired} day / {thresholds.nightTakeoffsRequired} night
+          takeoffs and {thresholds.dayLandingsRequired} day / {thresholds.nightLandingsRequired} night landings
+          within {thresholds.periodMonths} months, plus {thresholds.instrumentApproachesRequired} instrument
+          approaches within {thresholds.instrumentApproachesPeriodMonths} months (editable in Settings). Recency
+          rules can change or vary by aircraft category and class — verify against the current CARs before relying
+          on this for compliance decisions.
         </p>
       </div>
 

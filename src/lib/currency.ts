@@ -70,7 +70,18 @@ export async function getPilotCurrency(pilotId: string, thresholds: CurrencyThre
 
   const trips = await prisma.trip.findMany({
     where: { OR: [{ pilotId }, { secondPilotId: pilotId }] },
-    select: { id: true, date: true, routeLabel: true, dayTakeoffs: true, dayLandings: true, nightTakeoffs: true, nightLandings: true },
+    select: {
+      id: true,
+      date: true,
+      routeLabel: true,
+      dayTakeoffs: true,
+      dayLandings: true,
+      nightTakeoffs: true,
+      nightLandings: true,
+      pilotId: true,
+      pilotInstrumentApproaches: true,
+      secondPilotInstrumentApproaches: true,
+    },
     orderBy: { date: "desc" },
   });
 
@@ -78,17 +89,30 @@ export async function getPilotCurrency(pilotId: string, thresholds: CurrencyThre
   const dayLandingEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.dayLandings + t.nightLandings }));
   const nightTakeoffEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.nightTakeoffs }));
   const nightLandingEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.nightLandings }));
+  const instrumentApproachEvents = trips.map((t) => ({
+    tripId: t.id,
+    date: t.date,
+    routeLabel: t.routeLabel,
+    count: t.pilotId === pilotId ? t.pilotInstrumentApproaches : t.secondPilotInstrumentApproaches,
+  }));
 
-  const dayTakeoffs = computeFromEvents(dayTakeoffEvents, thresholds.takeoffsRequired, thresholds.periodMonths, asOf);
-  const dayLandings = computeFromEvents(dayLandingEvents, thresholds.landingsRequired, thresholds.periodMonths, asOf);
-  const nightTakeoffs = computeFromEvents(nightTakeoffEvents, thresholds.takeoffsRequired, thresholds.periodMonths, asOf);
-  const nightLandings = computeFromEvents(nightLandingEvents, thresholds.landingsRequired, thresholds.periodMonths, asOf);
+  const dayTakeoffs = computeFromEvents(dayTakeoffEvents, thresholds.dayTakeoffsRequired, thresholds.periodMonths, asOf);
+  const dayLandings = computeFromEvents(dayLandingEvents, thresholds.dayLandingsRequired, thresholds.periodMonths, asOf);
+  const nightTakeoffs = computeFromEvents(nightTakeoffEvents, thresholds.nightTakeoffsRequired, thresholds.periodMonths, asOf);
+  const nightLandings = computeFromEvents(nightLandingEvents, thresholds.nightLandingsRequired, thresholds.periodMonths, asOf);
+  const instrumentApproaches = computeFromEvents(
+    instrumentApproachEvents,
+    thresholds.instrumentApproachesRequired,
+    thresholds.instrumentApproachesPeriodMonths,
+    asOf
+  );
 
   return {
     pilotId: pilot.id,
     pilotName: pilot.name,
     day: { takeoffs: dayTakeoffs, landings: dayLandings, ...combine(dayTakeoffs, dayLandings) },
     night: { takeoffs: nightTakeoffs, landings: nightLandings, ...combine(nightTakeoffs, nightLandings) },
+    instrumentApproaches,
   };
 }
 
@@ -102,15 +126,31 @@ export async function getAllPilotsCurrency(thresholds: CurrencyThresholds, asOf 
   return results;
 }
 
+function toCurrencyThresholds(s: {
+  currencyDayTakeoffsRequired: number;
+  currencyDayLandingsRequired: number;
+  currencyNightTakeoffsRequired: number;
+  currencyNightLandingsRequired: number;
+  currencyPeriodMonths: number;
+  instrumentApproachesRequired: number;
+  instrumentApproachesPeriodMonths: number;
+}): CurrencyThresholds {
+  return {
+    dayTakeoffsRequired: s.currencyDayTakeoffsRequired,
+    dayLandingsRequired: s.currencyDayLandingsRequired,
+    nightTakeoffsRequired: s.currencyNightTakeoffsRequired,
+    nightLandingsRequired: s.currencyNightLandingsRequired,
+    periodMonths: s.currencyPeriodMonths,
+    instrumentApproachesRequired: s.instrumentApproachesRequired,
+    instrumentApproachesPeriodMonths: s.instrumentApproachesPeriodMonths,
+  };
+}
+
 export async function getCurrencyThresholds(): Promise<CurrencyThresholds> {
   const s = await prisma.regulatorySettings.findFirst();
   if (!s) {
     const created = await prisma.regulatorySettings.create({ data: {} });
-    return {
-      takeoffsRequired: created.currencyTakeoffsRequired,
-      landingsRequired: created.currencyLandingsRequired,
-      periodMonths: created.currencyPeriodMonths,
-    };
+    return toCurrencyThresholds(created);
   }
-  return { takeoffsRequired: s.currencyTakeoffsRequired, landingsRequired: s.currencyLandingsRequired, periodMonths: s.currencyPeriodMonths };
+  return toCurrencyThresholds(s);
 }

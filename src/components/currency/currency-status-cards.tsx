@@ -17,7 +17,8 @@ function statusFor(current: boolean, lapseDate: Date | null) {
 function urgencyRank(currency: PilotCurrency): number {
   const dayDays = currency.day.lapseDate ? daysUntil(currency.day.lapseDate) : -9999;
   const nightDays = currency.night.lapseDate ? daysUntil(currency.night.lapseDate) : -9999;
-  return Math.min(dayDays, nightDays);
+  const iaDays = currency.instrumentApproaches.lapseDate ? daysUntil(currency.instrumentApproaches.lapseDate) : -9999;
+  return Math.min(dayDays, nightDays, iaDays);
 }
 
 function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
@@ -30,7 +31,8 @@ function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
       {sorted.map((c) => {
         const day = statusFor(c.day.current, c.day.lapseDate);
         const night = statusFor(c.night.current, c.night.lapseDate);
-        const flagged = day.tone !== "ok" || night.tone !== "ok";
+        const instrumentApproaches = statusFor(c.instrumentApproaches.current, c.instrumentApproaches.lapseDate);
+        const flagged = day.tone !== "ok" || night.tone !== "ok" || instrumentApproaches.tone !== "ok";
 
         return (
           <div key={c.pilotId} className={cn("rounded-lg border p-4", flagged ? "border-warning/40 bg-warning/5" : "bg-card")}>
@@ -41,6 +43,7 @@ function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
             <div className="mt-3 space-y-2 text-sm">
               <CurrencyRow label="Day" status={day} lapseDate={c.day.lapseDate} />
               <CurrencyRow label="Night" status={night} lapseDate={c.night.lapseDate} />
+              <CurrencyRow label="Instrument approaches" status={instrumentApproaches} lapseDate={c.instrumentApproaches.lapseDate} />
             </div>
           </div>
         );
@@ -59,7 +62,7 @@ function CurrencyRow({
   lapseDate: Date | null;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1.5">
         {status.tone === "warning" && <Clock className="size-3.5 text-warning-foreground" />}

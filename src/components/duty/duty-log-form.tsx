@@ -32,6 +32,9 @@ export interface DutyLogFormValue {
   restPeriodBeforeHours: string;
   splitDutyApplied: boolean;
   splitDutyNote: string;
+  unforeseenCircumstancesApplied: boolean;
+  unforeseenCircumstancesNote: string;
+  unforeseenSignedByName: string;
   notes: string;
 }
 
@@ -47,6 +50,9 @@ function emptyValue(): DutyLogFormValue {
     restPeriodBeforeHours: "12",
     splitDutyApplied: false,
     splitDutyNote: "",
+    unforeseenCircumstancesApplied: false,
+    unforeseenCircumstancesNote: "",
+    unforeseenSignedByName: "",
     notes: "",
   };
 }
@@ -67,13 +73,16 @@ interface DutyLogFormProps {
 
 function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) {
   const [value, setValue] = React.useState<DutyLogFormValue>(initial ?? emptyValue());
+  const [signing, setSigning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
-      setValue(initial ?? emptyValue());
+      const v = initial ?? emptyValue();
+      setValue(v);
+      setSigning(!!v.unforeseenSignedByName);
       setError(null);
     }
   }, [open, initial]);
@@ -101,6 +110,10 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
       setError("Duty end time must be after report time (check the “ends next day” box for overnight duty).");
       return;
     }
+    if (value.unforeseenCircumstancesApplied && !value.unforeseenSignedByName.trim()) {
+      setError("Enter the pilot's name to sign the unforeseen operational circumstances notification.");
+      return;
+    }
 
     setSaving(true);
     const result = await saveDutyDayLog({
@@ -113,6 +126,9 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
       restPeriodBeforeHours: value.restPeriodBeforeHours,
       splitDutyApplied: value.splitDutyApplied,
       splitDutyNote: value.splitDutyNote,
+      unforeseenCircumstancesApplied: value.unforeseenCircumstancesApplied,
+      unforeseenCircumstancesNote: value.unforeseenCircumstancesNote,
+      unforeseenSignedByName: value.unforeseenCircumstancesApplied ? value.unforeseenSignedByName : "",
       notes: value.notes,
     });
     setSaving(false);
@@ -234,7 +250,13 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={value.splitDutyApplied}
-              onCheckedChange={(c) => setValue((v) => ({ ...v, splitDutyApplied: c === true }))}
+              onCheckedChange={(c) =>
+                setValue((v) => ({
+                  ...v,
+                  splitDutyApplied: c === true,
+                  unforeseenCircumstancesApplied: c === true ? false : v.unforeseenCircumstancesApplied,
+                }))
+              }
             />
             Split-duty extension applied
           </label>
@@ -244,6 +266,56 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
               value={value.splitDutyNote}
               onChange={(e) => setValue((v) => ({ ...v, splitDutyNote: e.target.value }))}
             />
+          )}
+        </div>
+
+        <div className="space-y-2 rounded-md border p-3">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={value.unforeseenCircumstancesApplied}
+              onCheckedChange={(c) =>
+                setValue((v) => ({
+                  ...v,
+                  unforeseenCircumstancesApplied: c === true,
+                  splitDutyApplied: c === true ? false : v.splitDutyApplied,
+                }))
+              }
+            />
+            Unforeseen operational circumstances extension applied
+          </label>
+          {value.unforeseenCircumstancesApplied && (
+            <>
+              <Textarea
+                placeholder="Describe the unforeseen operational circumstances requiring this extension (e.g., weather, ATC delay, mechanical issue), confirm the flight crew was consulted and it was considered safe, and note that the next rest period was increased by at least the length of this extension…"
+                value={value.unforeseenCircumstancesNote}
+                onChange={(e) => setValue((v) => ({ ...v, unforeseenCircumstancesNote: e.target.value }))}
+              />
+              <div className="space-y-2 rounded-md border border-dashed p-2.5">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={signing}
+                    onCheckedChange={(c) => {
+                      setSigning(c === true);
+                      if (c !== true) setValue((v) => ({ ...v, unforeseenSignedByName: "" }));
+                    }}
+                  />
+                  I certify this notification is accurate
+                </label>
+                {signing && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dl-signature" className="text-xs font-normal">
+                      Pilot signature (type full name)
+                    </Label>
+                    <Input
+                      id="dl-signature"
+                      value={value.unforeseenSignedByName}
+                      onChange={(e) => setValue((v) => ({ ...v, unforeseenSignedByName: e.target.value }))}
+                      placeholder="Full name"
+                    />
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 

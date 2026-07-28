@@ -10,9 +10,8 @@ export interface RegulatoryThresholds {
   restPeriodWindowDays: number;
   splitDutyMaxExtensionHours: number;
   splitDutyMinRestHours: number;
-  currencyTakeoffsRequired: number;
-  currencyLandingsRequired: number;
-  currencyPeriodMonths: number;
+  unforeseenMaxExtensionHours: number;
+  unforeseenMaxDutyHours: number;
   flightHours30DayLimit: number;
   flightHours90DayLimit: number;
   flightHours12MonthLimit: number;
@@ -37,9 +36,8 @@ function toThresholds(s: {
   restPeriodWindowDays: number;
   splitDutyMaxExtensionHours: unknown;
   splitDutyMinRestHours: unknown;
-  currencyTakeoffsRequired: number;
-  currencyLandingsRequired: number;
-  currencyPeriodMonths: number;
+  unforeseenMaxExtensionHours: unknown;
+  unforeseenMaxDutyHours: unknown;
   flightHours30DayLimit: unknown;
   flightHours90DayLimit: unknown;
   flightHours12MonthLimit: unknown;
@@ -54,9 +52,8 @@ function toThresholds(s: {
     restPeriodWindowDays: s.restPeriodWindowDays,
     splitDutyMaxExtensionHours: toNumber(s.splitDutyMaxExtensionHours),
     splitDutyMinRestHours: toNumber(s.splitDutyMinRestHours),
-    currencyTakeoffsRequired: s.currencyTakeoffsRequired,
-    currencyLandingsRequired: s.currencyLandingsRequired,
-    currencyPeriodMonths: s.currencyPeriodMonths,
+    unforeseenMaxExtensionHours: toNumber(s.unforeseenMaxExtensionHours),
+    unforeseenMaxDutyHours: toNumber(s.unforeseenMaxDutyHours),
     flightHours30DayLimit: toNumber(s.flightHours30DayLimit),
     flightHours90DayLimit: toNumber(s.flightHours90DayLimit),
     flightHours12MonthLimit: toNumber(s.flightHours12MonthLimit),
@@ -71,12 +68,17 @@ export interface DutyEvaluation {
   flightDutyHours: number;
   rolling30DayHours: number;
   effectiveLimitHours: number;
-  extensionReason: "none" | "30day" | "rest" | "split";
+  extensionReason: "none" | "30day" | "rest" | "split" | "unforeseen";
   withinLimit: boolean;
 }
 
 export function evaluateDutyEntry(
-  entry: { restPeriodBeforeHours: number; splitDutyApplied: boolean; flightDutyHours: number },
+  entry: {
+    restPeriodBeforeHours: number;
+    splitDutyApplied: boolean;
+    unforeseenCircumstancesApplied: boolean;
+    flightDutyHours: number;
+  },
   rolling30DayHours: number,
   thresholds: RegulatoryThresholds
 ): DutyEvaluation {
@@ -95,6 +97,9 @@ export function evaluateDutyEntry(
   if (entry.splitDutyApplied) {
     effectiveLimitHours += thresholds.splitDutyMaxExtensionHours;
     extensionReason = "split";
+  } else if (entry.unforeseenCircumstancesApplied) {
+    effectiveLimitHours = Math.min(effectiveLimitHours + thresholds.unforeseenMaxExtensionHours, thresholds.unforeseenMaxDutyHours);
+    extensionReason = "unforeseen";
   }
 
   return {
@@ -142,6 +147,10 @@ export interface DutyDayLogDto {
   restPeriodBeforeHours: number;
   splitDutyApplied: boolean;
   splitDutyNote: string | null;
+  unforeseenCircumstancesApplied: boolean;
+  unforeseenCircumstancesNote: string | null;
+  unforeseenSignedByName: string | null;
+  unforeseenSignedAt: Date | null;
   notes: string | null;
   rolling30DayHours: number;
   rolling90DayHours: number;
@@ -180,7 +189,12 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
     ]);
     const restPeriodBeforeHours = toNumber(log.restPeriodBeforeHours);
     const evaluation = evaluateDutyEntry(
-      { restPeriodBeforeHours, splitDutyApplied: log.splitDutyApplied, flightDutyHours },
+      {
+        restPeriodBeforeHours,
+        splitDutyApplied: log.splitDutyApplied,
+        unforeseenCircumstancesApplied: log.unforeseenCircumstancesApplied,
+        flightDutyHours,
+      },
       rolling30DayHours,
       thresholds
     );
@@ -196,6 +210,10 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
       restPeriodBeforeHours,
       splitDutyApplied: log.splitDutyApplied,
       splitDutyNote: log.splitDutyNote,
+      unforeseenCircumstancesApplied: log.unforeseenCircumstancesApplied,
+      unforeseenCircumstancesNote: log.unforeseenCircumstancesNote,
+      unforeseenSignedByName: log.unforeseenSignedByName,
+      unforeseenSignedAt: log.unforeseenSignedAt,
       notes: log.notes,
       rolling30DayHours,
       rolling90DayHours,
@@ -307,7 +325,12 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       const flightDutyHours = computeFlightDutyHours(log.reportTime, log.dutyEndTime);
       const logRolling30 = await getRolling30DayFlightHours(pilot.id, log.date);
       const evaluation = evaluateDutyEntry(
-        { restPeriodBeforeHours: toNumber(log.restPeriodBeforeHours), splitDutyApplied: log.splitDutyApplied, flightDutyHours },
+        {
+          restPeriodBeforeHours: toNumber(log.restPeriodBeforeHours),
+          splitDutyApplied: log.splitDutyApplied,
+          unforeseenCircumstancesApplied: log.unforeseenCircumstancesApplied,
+          flightDutyHours,
+        },
         logRolling30,
         thresholds
       );

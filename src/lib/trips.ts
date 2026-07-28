@@ -38,6 +38,8 @@ export interface TripDto {
   dayLandings: number;
   nightTakeoffs: number;
   nightLandings: number;
+  pilotInstrumentApproaches: number;
+  secondPilotInstrumentApproaches: number;
   passengers: { id: string; name: string }[];
 }
 
@@ -103,6 +105,8 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
     dayLandings: t.dayLandings,
     nightTakeoffs: t.nightTakeoffs,
     nightLandings: t.nightLandings,
+    pilotInstrumentApproaches: t.pilotInstrumentApproaches,
+    secondPilotInstrumentApproaches: t.secondPilotInstrumentApproaches,
     passengers: t.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
   }));
 }

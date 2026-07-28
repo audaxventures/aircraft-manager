@@ -20,9 +20,15 @@ interface RegulatorySettings {
   restPeriodWindowDays: number;
   splitDutyMaxExtensionHours: number;
   splitDutyMinRestHours: number;
-  currencyTakeoffsRequired: number;
-  currencyLandingsRequired: number;
+  unforeseenMaxExtensionHours: number;
+  unforeseenMaxDutyHours: number;
+  currencyDayTakeoffsRequired: number;
+  currencyDayLandingsRequired: number;
+  currencyNightTakeoffsRequired: number;
+  currencyNightLandingsRequired: number;
   currencyPeriodMonths: number;
+  instrumentApproachesRequired: number;
+  instrumentApproachesPeriodMonths: number;
   flightHours30DayLimit: number;
   flightHours90DayLimit: number;
   flightHours12MonthLimit: number;
@@ -60,9 +66,15 @@ function RegulatorySettingsForm({ settings }: { settings: RegulatorySettings }) 
     restPeriodWindowDays: String(settings.restPeriodWindowDays),
     splitDutyMaxExtensionHours: String(toNumber(settings.splitDutyMaxExtensionHours)),
     splitDutyMinRestHours: String(toNumber(settings.splitDutyMinRestHours)),
-    currencyTakeoffsRequired: String(settings.currencyTakeoffsRequired),
-    currencyLandingsRequired: String(settings.currencyLandingsRequired),
+    unforeseenMaxExtensionHours: String(toNumber(settings.unforeseenMaxExtensionHours)),
+    unforeseenMaxDutyHours: String(toNumber(settings.unforeseenMaxDutyHours)),
+    currencyDayTakeoffsRequired: String(settings.currencyDayTakeoffsRequired),
+    currencyDayLandingsRequired: String(settings.currencyDayLandingsRequired),
+    currencyNightTakeoffsRequired: String(settings.currencyNightTakeoffsRequired),
+    currencyNightLandingsRequired: String(settings.currencyNightLandingsRequired),
     currencyPeriodMonths: String(settings.currencyPeriodMonths),
+    instrumentApproachesRequired: String(settings.instrumentApproachesRequired),
+    instrumentApproachesPeriodMonths: String(settings.instrumentApproachesPeriodMonths),
     flightHours30DayLimit: String(toNumber(settings.flightHours30DayLimit)),
     flightHours90DayLimit: String(toNumber(settings.flightHours90DayLimit)),
     flightHours12MonthLimit: String(toNumber(settings.flightHours12MonthLimit)),
@@ -138,26 +150,65 @@ function RegulatorySettingsForm({ settings }: { settings: RegulatorySettings }) 
             onChange={set("splitDutyMinRestHours")}
             suffix="hrs"
           />
+          <Field
+            label="Unforeseen circumstances max extension"
+            value={form.unforeseenMaxExtensionHours}
+            onChange={set("unforeseenMaxExtensionHours")}
+            suffix="hrs"
+          />
+          <Field
+            label="Unforeseen circumstances max duty day"
+            value={form.unforeseenMaxDutyHours}
+            onChange={set("unforeseenMaxDutyHours")}
+            suffix="hrs"
+          />
         </div>
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-medium text-foreground">CAR 401.05(2) — recency</h3>
+        <h3 className="mb-3 text-sm font-medium text-foreground">CAR 401.05(2) — takeoff/landing recency</h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Field
-            label="Takeoffs required"
-            value={form.currencyTakeoffsRequired}
-            onChange={set("currencyTakeoffsRequired")}
+            label="Day takeoffs required"
+            value={form.currencyDayTakeoffsRequired}
+            onChange={set("currencyDayTakeoffsRequired")}
           />
           <Field
-            label="Landings required"
-            value={form.currencyLandingsRequired}
-            onChange={set("currencyLandingsRequired")}
+            label="Day landings required"
+            value={form.currencyDayLandingsRequired}
+            onChange={set("currencyDayLandingsRequired")}
+          />
+          <Field
+            label="Night takeoffs required"
+            value={form.currencyNightTakeoffsRequired}
+            onChange={set("currencyNightTakeoffsRequired")}
+          />
+          <Field
+            label="Night landings required"
+            value={form.currencyNightLandingsRequired}
+            onChange={set("currencyNightLandingsRequired")}
           />
           <Field
             label="Currency period"
             value={form.currencyPeriodMonths}
             onChange={set("currencyPeriodMonths")}
+            suffix="months"
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-medium text-foreground">CAR 401.05(2) — instrument approach recency</h3>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Field
+            label="Approaches required"
+            value={form.instrumentApproachesRequired}
+            onChange={set("instrumentApproachesRequired")}
+          />
+          <Field
+            label="Currency period"
+            value={form.instrumentApproachesPeriodMonths}
+            onChange={set("instrumentApproachesPeriodMonths")}
             suffix="months"
           />
         </div>

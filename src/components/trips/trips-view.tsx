@@ -52,6 +52,8 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
       dayLandings: String(trip.dayLandings),
       nightTakeoffs: String(trip.nightTakeoffs),
       nightLandings: String(trip.nightLandings),
+      pilotInstrumentApproaches: String(trip.pilotInstrumentApproaches),
+      secondPilotInstrumentApproaches: String(trip.secondPilotInstrumentApproaches),
       passengerIds: trip.passengers.map((p) => p.id),
     });
     setFormOpen(true);

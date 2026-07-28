@@ -4,9 +4,13 @@
 // component's module graph) — see lib/currency.ts for the server-only side.
 
 export interface CurrencyThresholds {
-  takeoffsRequired: number;
-  landingsRequired: number;
+  dayTakeoffsRequired: number;
+  dayLandingsRequired: number;
+  nightTakeoffsRequired: number;
+  nightLandingsRequired: number;
   periodMonths: number;
+  instrumentApproachesRequired: number;
+  instrumentApproachesPeriodMonths: number;
 }
 
 export interface QualifyingCalc {
@@ -32,6 +36,7 @@ export interface PilotCurrency {
     current: boolean;
     lapseDate: Date | null;
   };
+  instrumentApproaches: QualifyingCalc;
 }
 
 export function daysUntil(date: Date, asOf = new Date()): number {

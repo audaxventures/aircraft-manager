@@ -56,6 +56,11 @@ function ComplianceExportPanel({ pilots }: CompliancePanelProps) {
             <FileText /> Pilot currency report (PDF)
           </a>
         </Button>
+        <Button variant="outline" size="sm" asChild>
+          <a href={`/api/reports/unforeseen-circumstances/pdf?${dutyParams.toString()}`} target="_blank" rel="noreferrer">
+            <FileText /> Unforeseen circumstances report (PDF)
+          </a>
+        </Button>
       </div>
     </div>
   );

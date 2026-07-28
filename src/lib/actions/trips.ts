@@ -44,6 +44,8 @@ const tripSchema = z
     dayLandings: z.coerce.number().int().nonnegative(),
     nightTakeoffs: z.coerce.number().int().nonnegative(),
     nightLandings: z.coerce.number().int().nonnegative(),
+    pilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
+    secondPilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
     passengerIds: z.array(z.string()).default([]),
   })
   .refine((d) => d.dayTakeoffs + d.nightTakeoffs === d.cycles, {

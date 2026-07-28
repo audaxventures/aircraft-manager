@@ -51,6 +51,15 @@ function CurrencyView({ currencies }: CurrencyViewProps) {
         header: "Night qualifying landings",
         accessor: (c) => c.night.landings.qualifyingTrips.map((t) => formatDate(t.date)).join("; "),
       },
+      { header: "Instrument approaches status", accessor: (c) => (c.instrumentApproaches.current ? "Current" : "Not current") },
+      {
+        header: "Instrument approaches lapses/lapsed",
+        accessor: (c) => (c.instrumentApproaches.lapseDate ? formatDate(c.instrumentApproaches.lapseDate) : "—"),
+      },
+      {
+        header: "Qualifying instrument approaches",
+        accessor: (c) => c.instrumentApproaches.qualifyingTrips.map((t) => formatDate(t.date)).join("; "),
+      },
     ]);
     downloadCsv(`pilot-currency-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
@@ -70,6 +79,15 @@ function CurrencyView({ currencies }: CurrencyViewProps) {
       cell: ({ row }) => (
         <Badge variant={row.original.night.current ? "success" : "destructive"}>
           {statusLabel(row.original.night.current, row.original.night.lapseDate)}
+        </Badge>
+      ),
+    },
+    {
+      id: "instrumentApproaches",
+      header: "Instrument approaches",
+      cell: ({ row }) => (
+        <Badge variant={row.original.instrumentApproaches.current ? "success" : "destructive"}>
+          {statusLabel(row.original.instrumentApproaches.current, row.original.instrumentApproaches.lapseDate)}
         </Badge>
       ),
     },
@@ -103,6 +121,7 @@ function CurrencyView({ currencies }: CurrencyViewProps) {
             <CurrencyDetailSection title="Day landings" calc={detail.day.landings} />
             <CurrencyDetailSection title="Night takeoffs" calc={detail.night.takeoffs} />
             <CurrencyDetailSection title="Night landings" calc={detail.night.landings} />
+            <CurrencyDetailSection title="Instrument approaches" calc={detail.instrumentApproaches} />
           </div>
         )}
       </SlideOver>

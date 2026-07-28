@@ -18,6 +18,14 @@ function formatUtcDecimalTime(d: Date) {
   return `${formatDecimalHour(dateToDecimalHour(d))} UTC`;
 }
 
+const EXTENSION_LABELS: Record<DutyDayLogDto["extensionReason"], string> = {
+  none: "—",
+  "30day": "30-day extension",
+  rest: "Rest-period extension",
+  split: "Split-duty",
+  unforeseen: "Unforeseen circumstances",
+};
+
 interface DutyLogViewProps {
   logs: DutyDayLogDto[];
   pilots: PilotOption[];
@@ -44,6 +52,9 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
       restPeriodBeforeHours: String(log.restPeriodBeforeHours),
       splitDutyApplied: log.splitDutyApplied,
       splitDutyNote: log.splitDutyNote ?? "",
+      unforeseenCircumstancesApplied: log.unforeseenCircumstancesApplied,
+      unforeseenCircumstancesNote: log.unforeseenCircumstancesNote ?? "",
+      unforeseenSignedByName: log.unforeseenSignedByName ?? "",
       notes: log.notes ?? "",
     });
     setFormOpen(true);
@@ -63,6 +74,11 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
       { header: "12-month flight time (hrs)", accessor: (l) => l.rolling12MonthHours.toFixed(1) },
       { header: "Applicable limit (hrs)", accessor: (l) => l.effectiveLimitHours.toFixed(1) },
       { header: "Pass/Fail", accessor: (l) => (l.withinLimit ? "PASS" : "FAIL") },
+      { header: "Extension applied", accessor: (l) => EXTENSION_LABELS[l.extensionReason] },
+      { header: "Unforeseen circumstances", accessor: (l) => (l.unforeseenCircumstancesApplied ? "Yes" : "No") },
+      { header: "Unforeseen circumstances note", accessor: (l) => l.unforeseenCircumstancesNote },
+      { header: "Signed by", accessor: (l) => l.unforeseenSignedByName },
+      { header: "Signed at", accessor: (l) => (l.unforeseenSignedAt ? l.unforeseenSignedAt.toISOString() : "") },
       { header: "Notes", accessor: (l) => l.notes },
     ]);
     downloadCsv(`duty-days-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -100,6 +116,18 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
           {row.original.withinLimit ? "Pass" : "Fail"}
         </Badge>
       ),
+    },
+    {
+      accessorKey: "extensionReason",
+      header: "Extension",
+      cell: ({ row }) =>
+        row.original.extensionReason === "none" ? (
+          <span className="text-muted-foreground">—</span>
+        ) : (
+          <Badge variant={row.original.extensionReason === "unforeseen" ? "warning" : "outline"}>
+            {EXTENSION_LABELS[row.original.extensionReason]}
+          </Badge>
+        ),
     },
   ];
 

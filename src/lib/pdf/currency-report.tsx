@@ -2,12 +2,12 @@ import { Document, Page, Text, View } from "@react-pdf/renderer";
 
 import { pdfStyles as s } from "@/lib/pdf/styles";
 import { formatDate, formatDateTime } from "@/lib/format";
-import type { PilotCurrency } from "@/lib/currency-shared";
+import type { CurrencyThresholds, PilotCurrency } from "@/lib/currency-shared";
 
 interface CurrencyReportProps {
   aircraftTailNumber: string;
   currencies: PilotCurrency[];
-  thresholds: { takeoffsRequired: number; landingsRequired: number; periodMonths: number };
+  thresholds: CurrencyThresholds;
   generatedAt: Date;
 }
 
@@ -31,7 +31,9 @@ function CurrencyReport({ aircraftTailNumber, currencies, thresholds, generatedA
             <View style={s.metaItem}>
               <Text style={s.metaLabel}>Requirement</Text>
               <Text style={s.metaValue}>
-                {thresholds.takeoffsRequired} takeoffs / {thresholds.landingsRequired} landings in {thresholds.periodMonths} months
+                {thresholds.dayTakeoffsRequired}/{thresholds.dayLandingsRequired} day, {thresholds.nightTakeoffsRequired}/
+                {thresholds.nightLandingsRequired} night, {thresholds.instrumentApproachesRequired} approaches — in{" "}
+                {thresholds.periodMonths} mo
               </Text>
             </View>
             <View style={s.metaItem}>
@@ -45,11 +47,17 @@ function CurrencyReport({ aircraftTailNumber, currencies, thresholds, generatedA
           <View key={c.pilotId} wrap={false} style={{ marginBottom: 14 }}>
             <Text style={s.sectionTitle}>{c.pilotName}</Text>
             <View style={{ flexDirection: "row", marginBottom: 6 }}>
-              <Text style={{ fontSize: 9, width: "50%" }}>
+              <Text style={{ fontSize: 9, width: "34%" }}>
                 Day: <Text style={{ fontFamily: "Helvetica-Bold" }}>{statusText(c.day.current, c.day.lapseDate)}</Text>
               </Text>
-              <Text style={{ fontSize: 9, width: "50%" }}>
+              <Text style={{ fontSize: 9, width: "33%" }}>
                 Night: <Text style={{ fontFamily: "Helvetica-Bold" }}>{statusText(c.night.current, c.night.lapseDate)}</Text>
+              </Text>
+              <Text style={{ fontSize: 9, width: "33%" }}>
+                Instrument:{" "}
+                <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                  {statusText(c.instrumentApproaches.current, c.instrumentApproaches.lapseDate)}
+                </Text>
               </Text>
             </View>
 
@@ -57,6 +65,7 @@ function CurrencyReport({ aircraftTailNumber, currencies, thresholds, generatedA
             <CurrencyDetailTable label="Day landings" calc={c.day.landings} />
             <CurrencyDetailTable label="Night takeoffs" calc={c.night.takeoffs} />
             <CurrencyDetailTable label="Night landings" calc={c.night.landings} />
+            <CurrencyDetailTable label="Instrument approaches" calc={c.instrumentApproaches} />
           </View>
         ))}
 

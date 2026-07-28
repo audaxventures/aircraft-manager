@@ -128,6 +128,10 @@ model Trip {
   dayLandings       Int             @default(0)
   nightTakeoffs     Int             @default(0)
   nightLandings     Int             @default(0)
+  // Instrument approaches conducted by each pilot on this trip, toward CAR
+  // 401.05(2) instrument-approach recency (tracked per pilot, not per trip).
+  pilotInstrumentApproaches       Int @default(0)
+  secondPilotInstrumentApproaches Int @default(0)
   passengers        TripPassenger[]
   attachments       Attachment[]
   createdAt         DateTime        @default(now())
@@ -165,6 +169,13 @@ model DutyDayLog {
   restPeriodBeforeHours   Decimal     @db.Decimal(6, 2)
   splitDutyApplied        Boolean     @default(false)
   splitDutyNote           String?
+  // CARS 604.102 unforeseen operational circumstances extension (mutually
+  // exclusive with split-duty). Digitally "signed" by typing the PIC's name;
+  // signedAt is set server-side the first time a name is recorded.
+  unforeseenCircumstancesApplied Boolean  @default(false)
+  unforeseenCircumstancesNote    String?
+  unforeseenSignedByName         String?
+  unforeseenSignedAt             DateTime?
   notes                   String?
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
@@ -263,10 +274,19 @@ model RegulatorySettings {
   restPeriodWindowDays          Int      @default(7)
   splitDutyMaxExtensionHours    Decimal  @default(4) @db.Decimal(4, 2)
   splitDutyMinRestHours         Decimal  @default(4) @db.Decimal(4, 2)
-  // CAR 401.05(2) recency
-  currencyTakeoffsRequired      Int      @default(5)
-  currencyLandingsRequired      Int      @default(5)
+  // CARS 604.102 unforeseen operational circumstances extension
+  unforeseenMaxExtensionHours   Decimal  @default(3) @db.Decimal(4, 2)
+  unforeseenMaxDutyHours        Decimal  @default(18) @db.Decimal(4, 2)
+  // CAR 401.05(2) recency — day and night takeoffs/landings tracked against
+  // separate required counts (both share the same rolling period).
+  currencyDayTakeoffsRequired   Int      @default(5)
+  currencyDayLandingsRequired   Int      @default(5)
+  currencyNightTakeoffsRequired Int      @default(5)
+  currencyNightLandingsRequired Int      @default(5)
   currencyPeriodMonths          Int      @default(6)
+  // CAR 401.05(2) instrument approach recency
+  instrumentApproachesRequired     Int   @default(6)
+  instrumentApproachesPeriodMonths Int   @default(6)
   // Company/regulatory caps on rolling flight time per pilot, shown on the
   // Duty Days pilot cards (distinct from rolling30DayFlightHoursLimit above,
   // which only governs CARS 604 duty-day extension eligibility).
