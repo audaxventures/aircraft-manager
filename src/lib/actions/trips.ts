@@ -48,13 +48,9 @@ const tripSchema = z
     secondPilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
     passengerIds: z.array(z.string()).default([]),
   })
-  .refine((d) => d.dayTakeoffs + d.nightTakeoffs === d.cycles, {
-    message: "Day + night takeoffs must equal total cycles",
+  .refine((d) => d.dayTakeoffs + d.nightTakeoffs === d.dayLandings + d.nightLandings, {
+    message: "Total takeoffs must equal total landings",
     path: ["dayTakeoffs"],
-  })
-  .refine((d) => d.dayLandings + d.nightLandings === d.cycles, {
-    message: "Day + night landings must equal total cycles",
-    path: ["dayLandings"],
   })
   .refine((d) => !d.pilotId || !d.secondPilotId || d.pilotId !== d.secondPilotId, {
     message: "Pilot in command and second in command must be different pilots",

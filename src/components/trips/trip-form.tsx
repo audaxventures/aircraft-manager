@@ -103,11 +103,11 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   const pilotName = pilots.find((p) => p.id === value.pilotId)?.name;
   const secondPilotName = pilots.find((p) => p.id === value.secondPilotId)?.name;
 
-  const cycles = parseInt(value.cycles || "0", 10);
+  // Cycles is derived from takeoffs, not separately entered — a trip can have
+  // any number of takeoffs/landings (e.g. multiple touch-and-goes in training).
   const takeoffSum = parseInt(value.dayTakeoffs || "0", 10) + parseInt(value.nightTakeoffs || "0", 10);
   const landingSum = parseInt(value.dayLandings || "0", 10) + parseInt(value.nightLandings || "0", 10);
-  const takeoffMismatch = cycles > 0 && takeoffSum !== cycles;
-  const landingMismatch = cycles > 0 && landingSum !== cycles;
+  const takeoffLandingMismatch = takeoffSum !== landingSum;
 
   const takeoffDecimal = value.takeoffTime ? parseDecimalHour(value.takeoffTime) : null;
   const landingDecimal = value.landingTime ? parseDecimalHour(value.landingTime) : null;
@@ -137,8 +137,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (takeoffMismatch || landingMismatch) {
-      setError("Day/night takeoff and landing counts must add up to the total cycles.");
+    if (takeoffLandingMismatch) {
+      setError("Total takeoffs and total landings must match.");
       return;
     }
     if (takeoffInvalid || landingInvalid) {
@@ -154,7 +154,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       arrivalAirport: value.arrivalAirport,
       routeLabel: value.routeLabel,
       hours: value.hours,
-      cycles: value.cycles,
+      cycles: String(takeoffSum),
       miles: value.miles,
       purpose: value.purpose,
       notes: value.notes,
@@ -275,8 +275,10 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="tr-cycles">Cycles</Label>
-            <Input id="tr-cycles" type="number" step="1" min="0" value={value.cycles} onChange={(e) => setValue((v) => ({ ...v, cycles: e.target.value }))} required />
+            <Label htmlFor="tr-cycles">
+              Cycles<span className="ml-1 font-normal text-muted-foreground">(auto)</span>
+            </Label>
+            <Input id="tr-cycles" type="number" value={takeoffSum} readOnly className="bg-secondary/50" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tr-miles">Miles</Label>
@@ -405,11 +407,9 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
               />
             </div>
           </div>
-          {(takeoffMismatch || landingMismatch) && (
+          {takeoffLandingMismatch && (
             <p className="mt-2 text-xs text-destructive">
-              Day + night must equal the {cycles} cycle{cycles === 1 ? "" : "s"} entered above
-              {takeoffMismatch && ` (takeoffs: ${takeoffSum})`}
-              {landingMismatch && ` (landings: ${landingSum})`}.
+              Total takeoffs ({takeoffSum}) must equal total landings ({landingSum}).
             </p>
           )}
         </div>
