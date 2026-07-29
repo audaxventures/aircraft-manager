@@ -110,8 +110,12 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
       setError("Duty end time must be after report time (check the “ends next day” box for overnight duty).");
       return;
     }
-    if (value.unforeseenCircumstancesApplied && !value.unforeseenSignedByName.trim()) {
-      setError("Enter the pilot's name to sign the unforeseen operational circumstances notification.");
+    if (value.unforeseenCircumstancesApplied && !value.unforeseenSignedByName) {
+      setError("Select the signing pilot for the unforeseen operational circumstances notification.");
+      return;
+    }
+    if (value.unforeseenCircumstancesApplied && !signing) {
+      setError("Check the box to confirm the unforeseen operational circumstances signature.");
       return;
     }
 
@@ -128,7 +132,7 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
       splitDutyNote: value.splitDutyNote,
       unforeseenCircumstancesApplied: value.unforeseenCircumstancesApplied,
       unforeseenCircumstancesNote: value.unforeseenCircumstancesNote,
-      unforeseenSignedByName: value.unforeseenCircumstancesApplied ? value.unforeseenSignedByName : "",
+      unforeseenSignedByName: value.unforeseenCircumstancesApplied && signing ? value.unforeseenSignedByName : "",
       notes: value.notes,
     });
     setSaving(false);
@@ -291,29 +295,39 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
                 onChange={(e) => setValue((v) => ({ ...v, unforeseenCircumstancesNote: e.target.value }))}
               />
               <div className="space-y-2 rounded-md border border-dashed p-2.5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="dl-signature-pilot" className="text-xs font-normal">
+                    Sign as
+                  </Label>
+                  <Select
+                    value={value.unforeseenSignedByName}
+                    onValueChange={(name) => setValue((v) => ({ ...v, unforeseenSignedByName: name }))}
+                  >
+                    <SelectTrigger id="dl-signature-pilot">
+                      <SelectValue placeholder="Select the signing pilot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pilots.map((p) => (
+                        <SelectItem key={p.id} value={p.name}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {value.unforeseenSignedByName && (
+                  <div className="rounded-md bg-secondary/40 px-4 py-3">
+                    <p className="font-signature text-3xl leading-none text-foreground">{value.unforeseenSignedByName}</p>
+                  </div>
+                )}
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={signing}
-                    onCheckedChange={(c) => {
-                      setSigning(c === true);
-                      if (c !== true) setValue((v) => ({ ...v, unforeseenSignedByName: "" }));
-                    }}
+                    disabled={!value.unforeseenSignedByName}
+                    onCheckedChange={(c) => setSigning(c === true)}
                   />
                   I certify this notification is accurate
                 </label>
-                {signing && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="dl-signature" className="text-xs font-normal">
-                      Pilot signature (type full name)
-                    </Label>
-                    <Input
-                      id="dl-signature"
-                      value={value.unforeseenSignedByName}
-                      onChange={(e) => setValue((v) => ({ ...v, unforeseenSignedByName: e.target.value }))}
-                      placeholder="Full name"
-                    />
-                  </div>
-                )}
               </div>
             </>
           )}

@@ -6,6 +6,7 @@ import { Plus, PlaneTakeoff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TripForm, type PilotOption, type TripFormValue } from "@/components/trips/trip-form";
@@ -25,6 +26,14 @@ interface TripsViewProps {
 function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsViewProps) {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<TripFormValue | null>(null);
+  const [dateTab, setDateTab] = React.useState<"all" | "upcoming" | "past">("all");
+
+  const filteredTrips = React.useMemo(() => {
+    if (dateTab === "all") return trips;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return trips.filter((t) => (dateTab === "upcoming" ? t.date >= startOfToday : t.date < startOfToday));
+  }, [trips, dateTab]);
 
   function openNew() {
     setEditing(null);
@@ -106,22 +115,31 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
 
   return (
     <div>
-      <div className="mb-3 flex justify-end gap-2">
-        <TripExportPanel trips={trips} presets={exportPresets} />
-        <Button size="sm" onClick={openNew}>
-          <Plus /> Add trip
-        </Button>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <Tabs value={dateTab} onValueChange={(v) => setDateTab(v as typeof dateTab)}>
+          <TabsList>
+            <TabsTrigger value="all">All Trips</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming Trips</TabsTrigger>
+            <TabsTrigger value="past">Past Trips</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex gap-2">
+          <TripExportPanel trips={filteredTrips} presets={exportPresets} />
+          <Button size="sm" onClick={openNew}>
+            <Plus /> Add trip
+          </Button>
+        </div>
       </div>
 
       <DataTable
         columns={columns}
-        data={trips}
+        data={filteredTrips}
         onRowClick={openEdit}
         initialSorting={[{ id: "date", desc: true }]}
         emptyState={
           <EmptyState
             icon={<PlaneTakeoff className="size-8" />}
-            title="No trips logged yet"
+            title={dateTab === "all" ? "No trips logged yet" : `No ${dateTab} trips`}
             description="Add a trip after each flight to track hours, cycles, and passengers."
             action={
               <Button size="sm" onClick={openNew}>
