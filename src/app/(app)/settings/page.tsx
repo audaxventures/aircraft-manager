@@ -6,24 +6,29 @@ import { PilotsManager } from "@/components/settings/pilots-manager";
 import { VendorsManager } from "@/components/settings/vendors-manager";
 import { EventCategoriesManager } from "@/components/settings/event-categories-manager";
 import { RegulatorySettingsForm } from "@/components/settings/regulatory-settings-form";
+import { TeamMembersManager } from "@/components/settings/team-members-manager";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 import {
   getCostCategories,
   getEventCategories,
   getPilots,
   getRegulatorySettings,
+  getUsers,
   getVendors,
 } from "@/lib/settings";
 import { toNumber } from "@/lib/format";
+import { auth } from "@/auth";
 
 export default async function SettingsPage() {
-  const [aircraft, categories, pilots, vendors, eventCategories, regSettings] = await Promise.all([
+  const [aircraft, categories, pilots, vendors, eventCategories, regSettings, users, session] = await Promise.all([
     getPrimaryAircraft(),
     getCostCategories(true),
     getPilots(true),
     getVendors(true),
     getEventCategories(true),
     getRegulatorySettings(),
+    getUsers(),
+    auth(),
   ]);
 
   return (
@@ -40,6 +45,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="pilots">Pilots</TabsTrigger>
           <TabsTrigger value="event-categories">Event categories</TabsTrigger>
           <TabsTrigger value="regulatory">Regulatory thresholds</TabsTrigger>
+          <TabsTrigger value="team">Team members</TabsTrigger>
         </TabsList>
         <TabsContent value="aircraft">
           <AircraftForm
@@ -97,6 +103,9 @@ export default async function SettingsPage() {
               flightHours12MonthLimit: toNumber(regSettings.flightHours12MonthLimit),
             }}
           />
+        </TabsContent>
+        <TabsContent value="team">
+          <TeamMembersManager members={users} currentUserId={session?.user?.id ?? ""} />
         </TabsContent>
       </Tabs>
     </div>

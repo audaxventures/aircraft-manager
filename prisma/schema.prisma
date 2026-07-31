@@ -10,6 +10,30 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  OWNER
+  MEMBER
+}
+
+// Login identity, separate from Pilot (operational flight-crew data).
+// The very first login bootstraps a single OWNER row from the
+// ADMIN_EMAIL/ADMIN_PASSWORD_HASH env vars (see src/auth.ts) — after that,
+// all users (including changing the owner's own password) are managed
+// entirely through the Settings > Team members tab.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(MEMBER)
+  // Sidebar page keys this user can access (see src/lib/page-access.ts).
+  // Ignored for OWNER, who always has every page.
+  allowedPages String[] @default([])
+  archived     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // A single aircraft record today, but modeled as a table (not hardcoded)
 // so a second tail number could be added later without a schema rebuild.
 model Aircraft {

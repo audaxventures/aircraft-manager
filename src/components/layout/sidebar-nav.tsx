@@ -2,16 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-items";
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = session?.user?.role;
+  const allowedPages = session?.user?.allowedPages ?? [];
+
+  const visibleItems = navItems.filter((item) => {
+    if (role === "OWNER") return true;
+    if (!item.key) return false; // Settings — Owner-only
+    return allowedPages.includes(item.key);
+  });
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 px-3">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         const Icon = item.icon;
         return (

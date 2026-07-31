@@ -33,3 +33,10 @@ export async function getEventCategories(includeArchived = false) {
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 }
+
+export async function getUsers() {
+  return prisma.user.findMany({
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, email: true, role: true, allowedPages: true, archived: true },
+  });
+}
