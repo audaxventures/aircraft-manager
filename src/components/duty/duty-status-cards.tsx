@@ -126,9 +126,15 @@ function DutyStatusCards({
                     <dd className="tabular-nums">{s.lastQualifyingRestDate ? formatDate(s.lastQualifyingRestDate) : "None on record"}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">{s.nextRestDueBy ? (s.restViolation ? "Rest overdue since" : "Next rest due by") : "Rest status"}</dt>
+                    <dt className="text-muted-foreground">
+                      {s.currentlyResting ? "Rest status" : s.nextRestDueBy ? (s.restViolation ? "Rest overdue since" : "Next rest due by") : "Rest status"}
+                    </dt>
                     <dd className={cn("tabular-nums", s.restViolation && "font-medium text-destructive")}>
-                      {s.nextRestDueBy ? formatDate(s.nextRestDueBy) : "No 36h+ rest on record"}
+                      {s.currentlyResting
+                        ? "Currently resting"
+                        : s.nextRestDueBy
+                          ? formatDate(s.nextRestDueBy)
+                          : "No 36h+ rest on record"}
                     </dd>
                   </div>
                 </dl>

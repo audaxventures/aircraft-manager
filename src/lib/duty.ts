@@ -286,6 +286,7 @@ export interface PilotDutyStatus {
   daysSinceQualifyingRest: number | null;
   restViolation: boolean;
   nextRestDueBy: Date | null;
+  currentlyResting: boolean;
   activeFdtViolations: number;
 }
 
@@ -315,6 +316,7 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
         daysSinceQualifyingRest: null,
         restViolation: false,
         nextRestDueBy: null,
+        currentlyResting: false,
         activeFdtViolations: 0,
       });
       continue;
@@ -337,13 +339,33 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       if (!evaluation.withinLimit) activeFdtViolations++;
     }
 
-    const qualifyingRest = logs.find((l) => toNumber(l.restPeriodBeforeHours) >= thresholds.minRestPeriodHours);
-    const lastQualifyingRestDate = qualifyingRest ? qualifyingRest.date : null;
+    // A pilot who simply hasn't flown since their last duty day is still
+    // accruing rest in real time — that ongoing gap needs to be considered
+    // too, not just gaps already baked into a *subsequent* logged duty day's
+    // restPeriodBeforeHours. Otherwise a pilot who stops flying appears stuck
+    // in permanent "rest overdue" once the window elapses since their last
+    // logged duty, even though they've been resting the whole time.
+    const mostRecentLog = logs[0];
+    const hoursSinceLastDutyEnd = Math.max(0, (now.getTime() - mostRecentLog.dutyEndTime.getTime()) / (1000 * 60 * 60));
+    const currentlyResting = hoursSinceLastDutyEnd >= thresholds.minRestPeriodHours;
+
+    const historicalQualifyingRest = logs.find((l) => toNumber(l.restPeriodBeforeHours) >= thresholds.minRestPeriodHours);
+    const lastQualifyingRestDate = currentlyResting
+      ? new Date(mostRecentLog.dutyEndTime.getTime() + thresholds.minRestPeriodHours * 60 * 60 * 1000)
+      : historicalQualifyingRest
+        ? historicalQualifyingRest.date
+        : null;
     const daysSinceQualifyingRest = lastQualifyingRestDate
       ? (now.getTime() - lastQualifyingRestDate.getTime()) / (1000 * 60 * 60 * 24)
       : null;
-    const restViolation = daysSinceQualifyingRest === null || daysSinceQualifyingRest > thresholds.restPeriodWindowDays;
-    const nextRestDueBy = lastQualifyingRestDate
+    // While currently resting, the rest period is still open-ended (no new
+    // duty has been logged), so the pilot is compliant by definition and
+    // there's no "next rest due by" deadline pending — that only becomes
+    // meaningful again once they resume duty.
+    const restViolation = currentlyResting
+      ? false
+      : daysSinceQualifyingRest === null || daysSinceQualifyingRest > thresholds.restPeriodWindowDays;
+    const nextRestDueBy = !currentlyResting && lastQualifyingRestDate
       ? new Date(lastQualifyingRestDate.getTime() + thresholds.restPeriodWindowDays * 24 * 60 * 60 * 1000)
       : null;
 
@@ -358,6 +380,7 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
       daysSinceQualifyingRest,
       restViolation,
       nextRestDueBy,
+      currentlyResting,
       activeFdtViolations,
     });
   }
