@@ -7,6 +7,7 @@ import { VendorsManager } from "@/components/settings/vendors-manager";
 import { EventCategoriesManager } from "@/components/settings/event-categories-manager";
 import { RegulatorySettingsForm } from "@/components/settings/regulatory-settings-form";
 import { TeamMembersManager } from "@/components/settings/team-members-manager";
+import { RecentlyDeletedManager } from "@/components/settings/recently-deleted-manager";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 import {
   getCostCategories,
@@ -16,11 +17,12 @@ import {
   getUsers,
   getVendors,
 } from "@/lib/settings";
+import { getRecentlyDeleted } from "@/lib/trash";
 import { toNumber } from "@/lib/format";
 import { auth } from "@/auth";
 
 export default async function SettingsPage() {
-  const [aircraft, categories, pilots, vendors, eventCategories, regSettings, users, session] = await Promise.all([
+  const [aircraft, categories, pilots, vendors, eventCategories, regSettings, users, session, deletedItems] = await Promise.all([
     getPrimaryAircraft(),
     getCostCategories(true),
     getPilots(true),
@@ -29,6 +31,7 @@ export default async function SettingsPage() {
     getRegulatorySettings(),
     getUsers(),
     auth(),
+    getRecentlyDeleted(),
   ]);
 
   return (
@@ -46,6 +49,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="event-categories">Event categories</TabsTrigger>
           <TabsTrigger value="regulatory">Regulatory thresholds</TabsTrigger>
           <TabsTrigger value="team">Team members</TabsTrigger>
+          <TabsTrigger value="trash">Recently deleted</TabsTrigger>
         </TabsList>
         <TabsContent value="aircraft">
           <AircraftForm
@@ -106,6 +110,9 @@ export default async function SettingsPage() {
         </TabsContent>
         <TabsContent value="team">
           <TeamMembersManager members={users} currentUserId={session?.user?.id ?? ""} />
+        </TabsContent>
+        <TabsContent value="trash">
+          <RecentlyDeletedManager items={deletedItems} />
         </TabsContent>
       </Tabs>
     </div>

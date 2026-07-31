@@ -13,6 +13,7 @@ import { TimeInput } from "@/components/ui/time-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { saveDutyDayLog, deleteDutyDayLog } from "@/lib/actions/duty";
 import { formatDate } from "@/lib/format";
 
@@ -77,6 +78,7 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -149,11 +151,13 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
     setDeleting(true);
     await deleteDutyDayLog(value.id);
     setDeleting(false);
+    setConfirmDelete(false);
     toast.success("Duty log deleted");
     onOpenChange(false);
   }
 
   return (
+    <>
     <SlideOver
       open={open}
       onOpenChange={onOpenChange}
@@ -162,7 +166,13 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
       footer={
         <>
           {isEditing && (
-            <Button type="button" variant="outline" className="mr-auto text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+            <Button
+              type="button"
+              variant="outline"
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+            >
               <Trash2 /> {deleting ? "Deleting…" : "Delete"}
             </Button>
           )}
@@ -341,6 +351,15 @@ function DutyLogForm({ open, onOpenChange, pilots, initial }: DutyLogFormProps) 
         {error && <p className="text-sm text-destructive">{error}</p>}
       </form>
     </SlideOver>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="Delete this duty log?"
+      description="This duty log will be moved to Recently deleted in Settings, where it can be restored."
+      pending={deleting}
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }
 

@@ -3,7 +3,7 @@ import { toNumber } from "@/lib/format";
 
 export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
   const agg = await prisma.trip.aggregate({
-    where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+    where: { archived: false, ...(range ? { date: { gte: range.start, lt: range.end } } : {}) },
     _sum: { hours: true, miles: true },
     _count: true,
   });
@@ -54,6 +54,7 @@ export interface TripFilters {
 export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
   const trips = await prisma.trip.findMany({
     where: {
+      archived: false,
       ...(filters.from || filters.to
         ? { date: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lt: filters.to } : {}) } }
         : {}),
@@ -137,6 +138,7 @@ export async function getPassengerHistory(passengerId: string): Promise<Passenge
     where: { id: passengerId },
     include: {
       trips: {
+        where: { trip: { archived: false } },
         include: { trip: true },
         orderBy: { trip: { date: "desc" } },
       },

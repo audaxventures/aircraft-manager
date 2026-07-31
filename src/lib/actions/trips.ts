@@ -114,7 +114,7 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteTrip(id: string): Promise<ActionResult> {
-  await prisma.trip.delete({ where: { id } });
+  await prisma.trip.update({ where: { id }, data: { archived: true } });
   revalidatePath("/trips");
   revalidatePath("/costs");
   revalidatePath("/duty-days");

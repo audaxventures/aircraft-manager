@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { MultiCombobox, type ComboboxOption } from "@/components/shared/multi-combobox";
 import { saveTrip, deleteTrip, createPassenger } from "@/lib/actions/trips";
 import { formatDate } from "@/lib/format";
@@ -87,6 +88,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -184,11 +186,13 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
     setDeleting(true);
     await deleteTrip(value.id);
     setDeleting(false);
+    setConfirmDelete(false);
     toast.success("Trip deleted");
     onOpenChange(false);
   }
 
   return (
+    <>
     <SlideOver
       open={open}
       onOpenChange={onOpenChange}
@@ -201,7 +205,13 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       footer={
         <>
           {isEditing && (
-            <Button type="button" variant="outline" className="mr-auto text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+            <Button
+              type="button"
+              variant="outline"
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+            >
               <Trash2 /> {deleting ? "Deleting…" : "Delete"}
             </Button>
           )}
@@ -470,6 +480,15 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
         {error && <p className="text-sm text-destructive">{error}</p>}
       </form>
     </SlideOver>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="Delete this trip?"
+      description="This trip will be moved to Recently deleted in Settings, where it can be restored."
+      pending={deleting}
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }
 

@@ -32,6 +32,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
   const [trips, events] = await Promise.all([
     prisma.trip.findMany({
       where: {
+        archived: false,
         date: { lt: end },
         OR: [{ endDate: { gte: start } }, { endDate: null, date: { gte: start } }],
       },
@@ -39,7 +40,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
       orderBy: { date: "asc" },
     }),
     prisma.calendarEvent.findMany({
-      where: { startDate: { lt: end }, endDate: { gte: start } },
+      where: { archived: false, startDate: { lt: end }, endDate: { gte: start } },
       include: { category: true, pilot: true },
       orderBy: { startDate: "asc" },
     }),

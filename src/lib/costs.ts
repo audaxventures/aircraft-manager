@@ -38,6 +38,7 @@ export interface CostFilters {
 
 function buildWhere(filters: CostFilters) {
   return {
+    archived: false,
     ...(filters.from || filters.to
       ? {
           date: {
@@ -88,6 +89,7 @@ export async function getCostSummary(range?: { start: Date; end: Date }, vendorI
     include: {
       entries: {
         where: {
+          archived: false,
           ...(range ? { date: { gte: range.start, lt: range.end } } : {}),
           ...(vendorId ? { vendorId } : {}),
         },
@@ -183,11 +185,16 @@ export async function getMonthlySummaryGrid(
 
   const [entries, trips] = await Promise.all([
     prisma.costEntry.findMany({
-      where: { date: { gte: start, lt: end }, currency, ...(options.vendorId ? { vendorId: options.vendorId } : {}) },
+      where: {
+        archived: false,
+        date: { gte: start, lt: end },
+        currency,
+        ...(options.vendorId ? { vendorId: options.vendorId } : {}),
+      },
       select: { date: true, categoryId: true, amount: true },
     }),
     prisma.trip.findMany({
-      where: { date: { gte: start, lt: end } },
+      where: { archived: false, date: { gte: start, lt: end } },
       select: { date: true, hours: true, miles: true },
     }),
   ]);

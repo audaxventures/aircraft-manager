@@ -39,7 +39,7 @@ export async function saveCalendarEvent(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteCalendarEvent(id: string): Promise<ActionResult> {
-  await prisma.calendarEvent.delete({ where: { id } });
+  await prisma.calendarEvent.update({ where: { id }, data: { archived: true } });
   revalidatePath("/schedule");
   return { ok: true };
 }

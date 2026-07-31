@@ -46,13 +46,9 @@ export async function saveCostEntry(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteCostEntry(id: string): Promise<ActionResult> {
-  const attachments = await prisma.attachment.findMany({ where: { costEntryId: id } });
-  await prisma.costEntry.delete({ where: { id } });
-  for (const a of attachments) {
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      await del(a.url).catch(() => {});
-    }
-  }
+  // Soft-delete: attachments are left in place (not removed from blob
+  // storage) so a restore from Settings > Recently deleted comes back whole.
+  await prisma.costEntry.update({ where: { id }, data: { archived: true } });
 
   revalidatePath("/costs");
   revalidatePath("/reports");

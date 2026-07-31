@@ -13,6 +13,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { ListEditor } from "@/components/weekly-reports/list-editor";
 import { MaintenanceEditor } from "@/components/weekly-reports/maintenance-editor";
 import { saveWeeklyReport, deleteWeeklyReport, regenerateOverviewDraft, regenerateMaintenanceCandidates } from "@/lib/actions/weekly-reports";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { MaintenanceItem } from "@/lib/weekly-reports";
 
 export interface WeeklyReportFormValue {
@@ -38,6 +39,7 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
   const [value, setValue] = React.useState(initial);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [regenerating, setRegenerating] = React.useState(false);
   const [pullingMaintenance, setPullingMaintenance] = React.useState(false);
 
@@ -61,6 +63,7 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
     if (!reportId) return;
     setDeleting(true);
     await deleteWeeklyReport(reportId);
+    setConfirmDelete(false);
     toast.success("Report deleted");
     router.push("/weekly-reports");
   }
@@ -192,7 +195,13 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
 
       <div className="flex items-center justify-end gap-2 border-t pt-4">
         {reportId && (
-          <Button type="button" variant="outline" className="mr-auto text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+          <Button
+            type="button"
+            variant="outline"
+            className="mr-auto text-destructive hover:text-destructive"
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+          >
             <Trash2 /> {deleting ? "Deleting…" : "Delete"}
           </Button>
         )}
@@ -207,6 +216,14 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
           {saving ? "Saving…" : "Save report"}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete this report?"
+        description="This report will be moved to Recently deleted in Settings, where it can be restored."
+        pending={deleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

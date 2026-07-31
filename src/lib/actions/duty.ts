@@ -71,8 +71,19 @@ export async function saveDutyDayLog(input: unknown): Promise<ActionResult> {
     if (id) {
       await prisma.dutyDayLog.update({ where: { id }, data });
     } else {
-      const created = await prisma.dutyDayLog.create({ data });
-      logId = created.id;
+      // A previously soft-deleted log can still hold this pilot+date+dutyType
+      // slot (the unique constraint doesn't know about `archived`) -- restore
+      // it instead of failing with a false "already exists" error.
+      const archivedDuplicate = await prisma.dutyDayLog.findUnique({
+        where: { pilotId_date_dutyType: { pilotId: data.pilotId, date: data.date, dutyType: data.dutyType } },
+      });
+      if (archivedDuplicate?.archived) {
+        await prisma.dutyDayLog.update({ where: { id: archivedDuplicate.id }, data: { ...data, archived: false } });
+        logId = archivedDuplicate.id;
+      } else {
+        const created = await prisma.dutyDayLog.create({ data });
+        logId = created.id;
+      }
     }
   } catch {
     return { ok: false, error: "A duty log of this type for this pilot on this date already exists." };
@@ -85,7 +96,7 @@ export async function saveDutyDayLog(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteDutyDayLog(id: string): Promise<ActionResult> {
-  await prisma.dutyDayLog.delete({ where: { id } });
+  await prisma.dutyDayLog.update({ where: { id }, data: { archived: true } });
   revalidatePath("/duty-days");
   revalidatePath("/");
   return { ok: true };

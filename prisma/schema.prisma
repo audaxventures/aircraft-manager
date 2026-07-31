@@ -96,6 +96,9 @@ model CostEntry {
   currency      Currency     @default(CAD)
   notes         String?
   attachments   Attachment[]
+  // Soft-deleted: kept for recovery via Settings > Recently deleted instead
+  // of being permanently removed from the database.
+  archived      Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -158,6 +161,9 @@ model Trip {
   secondPilotInstrumentApproaches Int @default(0)
   passengers        TripPassenger[]
   attachments       Attachment[]
+  // Soft-deleted: kept for recovery via Settings > Recently deleted instead
+  // of being permanently removed from the database.
+  archived          Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -201,6 +207,9 @@ model DutyDayLog {
   unforeseenSignedByName         String?
   unforeseenSignedAt             DateTime?
   notes                   String?
+  // Soft-deleted: kept for recovery via Settings > Recently deleted instead
+  // of being permanently removed from the database.
+  archived                Boolean     @default(false)
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
 
@@ -245,6 +254,9 @@ model CalendarEvent {
   pilotId    String?
   pilot      Pilot?        @relation(fields: [pilotId], references: [id], onDelete: SetNull)
   notes      String?
+  // Soft-deleted: kept for recovery via Settings > Recently deleted instead
+  // of being permanently removed from the database.
+  archived   Boolean       @default(false)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
@@ -279,6 +291,9 @@ model WeeklyReport {
   customerDecisions String[]
   // [{ description: string, due: string }]
   maintenanceItems  Json     @default("[]")
+  // Soft-deleted: kept for recovery via Settings > Recently deleted instead
+  // of being permanently removed from the database.
+  archived          Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

@@ -16,6 +16,7 @@ export interface WeeklyReportListItem {
 
 export async function getWeeklyReports(): Promise<WeeklyReportListItem[]> {
   return prisma.weeklyReport.findMany({
+    where: { archived: false },
     select: { id: true, reportDate: true, createdAt: true },
     orderBy: { reportDate: "desc" },
   });
@@ -36,7 +37,7 @@ export interface WeeklyReportDto {
 
 export async function getWeeklyReport(id: string): Promise<WeeklyReportDto | null> {
   const r = await prisma.weeklyReport.findUnique({ where: { id } });
-  if (!r) return null;
+  if (!r || r.archived) return null;
   return {
     id: r.id,
     reportDate: r.reportDate,
@@ -54,7 +55,7 @@ export async function getWeeklyReport(id: string): Promise<WeeklyReportDto | nul
 /** Most recent report before (or on) the given date, used to carry open items into a new draft. */
 export async function getPreviousWeeklyReport(beforeDate: Date): Promise<WeeklyReportDto | null> {
   const r = await prisma.weeklyReport.findFirst({
-    where: { reportDate: { lt: beforeDate } },
+    where: { reportDate: { lt: beforeDate }, archived: false },
     orderBy: { reportDate: "desc" },
   });
   if (!r) return null;
@@ -88,11 +89,17 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
   const ytdRange = getYtdRange(reportDate, fiscalYearStartMonth);
 
   const [allTime, ytd, priorFy, upcoming] = await Promise.all([
-    prisma.trip.aggregate({ _sum: { hours: true, cycles: true } }),
-    prisma.trip.aggregate({ where: { date: { gte: ytdRange.start, lt: ytdRange.end } }, _sum: { hours: true, cycles: true } }),
-    prisma.trip.aggregate({ where: { date: { gte: priorFyStart, lt: fyStart } }, _sum: { hours: true, cycles: true } }),
+    prisma.trip.aggregate({ where: { archived: false }, _sum: { hours: true, cycles: true } }),
+    prisma.trip.aggregate({
+      where: { archived: false, date: { gte: ytdRange.start, lt: ytdRange.end } },
+      _sum: { hours: true, cycles: true },
+    }),
+    prisma.trip.aggregate({
+      where: { archived: false, date: { gte: priorFyStart, lt: fyStart } },
+      _sum: { hours: true, cycles: true },
+    }),
     prisma.trip.findMany({
-      where: { date: { gt: reportDate } },
+      where: { archived: false, date: { gt: reportDate } },
       orderBy: { date: "asc" },
       take: 3,
       select: { arrivalAirport: true, date: true },
@@ -140,6 +147,7 @@ export function buildOverviewDraft(stats: WeekOverviewStats, tailNumber: string)
 export async function getMaintenanceCandidates(reportDate: Date): Promise<MaintenanceItem[]> {
   const events = await prisma.calendarEvent.findMany({
     where: {
+      archived: false,
       endDate: { gte: reportDate },
       category: { name: { equals: "Maintenance", mode: "insensitive" } },
     },

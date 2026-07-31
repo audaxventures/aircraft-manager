@@ -73,7 +73,7 @@ export async function saveWeeklyReport(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteWeeklyReport(id: string): Promise<ActionResult> {
-  await prisma.weeklyReport.delete({ where: { id } });
+  await prisma.weeklyReport.update({ where: { id }, data: { archived: true } });
   revalidatePath("/weekly-reports");
   return { ok: true };
 }

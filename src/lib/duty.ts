@@ -114,7 +114,7 @@ export function evaluateDutyEntry(
 async function getRollingFlightHours(pilotId: string, asOfDate: Date, days: number): Promise<number> {
   const start = new Date(asOfDate.getTime() - days * 24 * 60 * 60 * 1000);
   const agg = await prisma.trip.aggregate({
-    where: { OR: [{ pilotId }, { secondPilotId: pilotId }], date: { gte: start, lte: asOfDate } },
+    where: { archived: false, OR: [{ pilotId }, { secondPilotId: pilotId }], date: { gte: start, lte: asOfDate } },
     _sum: { hours: true },
   });
   return toNumber(agg._sum.hours);
@@ -170,6 +170,7 @@ export async function getDutyDayLogs(filters: DutyFilters = {}): Promise<DutyDay
   const thresholds = await getRegulatoryThresholds();
   const logs = await prisma.dutyDayLog.findMany({
     where: {
+      archived: false,
       ...(filters.pilotId ? { pilotId: filters.pilotId } : {}),
       ...(filters.from || filters.to
         ? { date: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lt: filters.to } : {}) } }
@@ -249,14 +250,21 @@ export async function upsertDutyDayLogFromTrip(
   if (existing) {
     const reportTime = existing.reportTime < computedReportTime ? existing.reportTime : computedReportTime;
     const dutyEndTime = existing.dutyEndTime > computedDutyEndTime ? existing.dutyEndTime : computedDutyEndTime;
-    if (reportTime.getTime() !== existing.reportTime.getTime() || dutyEndTime.getTime() !== existing.dutyEndTime.getTime()) {
-      await prisma.dutyDayLog.update({ where: { id: existing.id }, data: { reportTime, dutyEndTime } });
+    // A previously soft-deleted log for this pilot+date is superseded by a
+    // real flight being logged again — restore it rather than leaving a
+    // hidden, stale row blocking the unique pilot+date+dutyType slot.
+    if (
+      existing.archived ||
+      reportTime.getTime() !== existing.reportTime.getTime() ||
+      dutyEndTime.getTime() !== existing.dutyEndTime.getTime()
+    ) {
+      await prisma.dutyDayLog.update({ where: { id: existing.id }, data: { reportTime, dutyEndTime, archived: false } });
     }
     return;
   }
 
   const priorLog = await prisma.dutyDayLog.findFirst({
-    where: { pilotId, date: { lt: date } },
+    where: { pilotId, date: { lt: date }, archived: false },
     orderBy: { date: "desc" },
   });
   const restPeriodBeforeHours = priorLog
@@ -298,7 +306,7 @@ export async function getAllPilotsDutyStatus(): Promise<PilotDutyStatus[]> {
   const statuses: PilotDutyStatus[] = [];
   for (const pilot of pilots) {
     const [logs, rolling30DayHours, rolling90DayHours, rolling12MonthHours] = await Promise.all([
-      prisma.dutyDayLog.findMany({ where: { pilotId: pilot.id }, orderBy: { date: "desc" } }),
+      prisma.dutyDayLog.findMany({ where: { pilotId: pilot.id, archived: false }, orderBy: { date: "desc" } }),
       getRolling30DayFlightHours(pilot.id, now),
       getRolling90DayFlightHours(pilot.id, now),
       getRolling12MonthFlightHours(pilot.id, now),

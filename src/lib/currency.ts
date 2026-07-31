@@ -69,7 +69,7 @@ export async function getPilotCurrency(pilotId: string, thresholds: CurrencyThre
   if (!pilot) return null;
 
   const trips = await prisma.trip.findMany({
-    where: { OR: [{ pilotId }, { secondPilotId: pilotId }] },
+    where: { archived: false, OR: [{ pilotId }, { secondPilotId: pilotId }] },
     select: {
       id: true,
       date: true,

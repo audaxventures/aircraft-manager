@@ -13,6 +13,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
 import { saveCostEntry, deleteCostEntry, uploadCostAttachment } from "@/lib/actions/costs";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatDate } from "@/lib/format";
 
 export interface CostCategoryOption {
@@ -65,6 +66,7 @@ function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: Cos
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -109,6 +111,7 @@ function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: Cos
     setDeleting(true);
     await deleteCostEntry(value.id);
     setDeleting(false);
+    setConfirmDelete(false);
     toast.success("Cost entry deleted");
     onOpenChange(false);
   }
@@ -130,6 +133,7 @@ function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: Cos
   }
 
   return (
+    <>
     <SlideOver
       open={open}
       onOpenChange={onOpenChange}
@@ -138,7 +142,13 @@ function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: Cos
       footer={
         <>
           {isEditing && (
-            <Button type="button" variant="outline" className="mr-auto text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+            <Button
+              type="button"
+              variant="outline"
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+            >
               <Trash2 /> {deleting ? "Deleting…" : "Delete"}
             </Button>
           )}
@@ -269,6 +279,15 @@ function CostEntryForm({ open, onOpenChange, categories, vendors, initial }: Cos
         )}
       </form>
     </SlideOver>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="Delete this cost entry?"
+      description="This entry will be moved to Recently deleted in Settings, where it can be restored."
+      pending={deleting}
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }
 

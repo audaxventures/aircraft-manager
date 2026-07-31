@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { saveCalendarEvent, deleteCalendarEvent } from "@/lib/actions/schedule";
 
 export interface EventCategoryOption {
@@ -53,6 +54,7 @@ function EventForm({ open, onOpenChange, categories, pilots, initial, defaultDat
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -95,11 +97,13 @@ function EventForm({ open, onOpenChange, categories, pilots, initial, defaultDat
     setDeleting(true);
     await deleteCalendarEvent(value.id);
     setDeleting(false);
+    setConfirmDelete(false);
     toast.success("Event deleted");
     onOpenChange(false);
   }
 
   return (
+    <>
     <SlideOver
       open={open}
       onOpenChange={onOpenChange}
@@ -111,7 +115,7 @@ function EventForm({ open, onOpenChange, categories, pilots, initial, defaultDat
               type="button"
               variant="outline"
               className="mr-auto text-destructive hover:text-destructive"
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               disabled={deleting}
             >
               <Trash2 /> {deleting ? "Deleting…" : "Delete"}
@@ -188,6 +192,15 @@ function EventForm({ open, onOpenChange, categories, pilots, initial, defaultDat
         {error && <p className="text-sm text-destructive">{error}</p>}
       </form>
     </SlideOver>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="Delete this event?"
+      description="This event will be moved to Recently deleted in Settings, where it can be restored."
+      pending={deleting}
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }
 
