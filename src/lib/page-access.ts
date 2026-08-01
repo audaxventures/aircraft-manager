@@ -58,6 +58,9 @@ const EXTRA_PATH_PAGE: { prefix: string; page: PageKey }[] = [
 /** Resolves a request pathname to the page it belongs to, for server-side access checks. */
 export function resolvePageForPath(pathname: string): PageKey | "settings" | null {
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return "settings";
+  // Full-database export dumps every table (all costs, all trips, etc.) —
+  // always Owner-only, same as the Settings page it's downloaded from.
+  if (pathname.startsWith("/api/reports/full-export")) return "settings";
   for (const { prefix, page } of EXTRA_PATH_PAGE) {
     if (pathname.startsWith(prefix)) return page;
   }

@@ -8,6 +8,7 @@ import { EventCategoriesManager } from "@/components/settings/event-categories-m
 import { RegulatorySettingsForm } from "@/components/settings/regulatory-settings-form";
 import { TeamMembersManager } from "@/components/settings/team-members-manager";
 import { RecentlyDeletedManager } from "@/components/settings/recently-deleted-manager";
+import { BackupExport } from "@/components/settings/backup-export";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 import {
   getCostCategories,
@@ -50,6 +51,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="regulatory">Regulatory thresholds</TabsTrigger>
           <TabsTrigger value="team">Team members</TabsTrigger>
           <TabsTrigger value="trash">Recently deleted</TabsTrigger>
+          <TabsTrigger value="backup">Backup</TabsTrigger>
         </TabsList>
         <TabsContent value="aircraft">
           <AircraftForm
@@ -113,6 +115,9 @@ export default async function SettingsPage() {
         </TabsContent>
         <TabsContent value="trash">
           <RecentlyDeletedManager items={deletedItems} />
+        </TabsContent>
+        <TabsContent value="backup">
+          <BackupExport />
         </TabsContent>
       </Tabs>
     </div>
