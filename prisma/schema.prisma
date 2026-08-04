@@ -161,6 +161,12 @@ model Trip {
   secondPilotInstrumentApproaches Int @default(0)
   passengers        TripPassenger[]
   attachments       Attachment[]
+  // Simulator training session rather than a real flight. Still counts
+  // toward pilot currency and duty-day/rolling flight-hour tracking, but its
+  // hours/cycles/miles are excluded from aircraft-utilization aggregates
+  // (Weekly Report lifetime hours, cost-per-hour/mile, monthly hours grid)
+  // since no airframe time or fuel is actually consumed.
+  isSimulator       Boolean         @default(false)
   // Soft-deleted: kept for recovery via Settings > Recently deleted instead
   // of being permanently removed from the database.
   archived          Boolean         @default(false)

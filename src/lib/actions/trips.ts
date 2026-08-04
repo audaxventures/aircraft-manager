@@ -28,6 +28,7 @@ const tripSchema = z
     id: z.string().optional(),
     date: z.coerce.date(),
     endDate: z.coerce.date().optional(),
+    isSimulator: z.boolean().default(false),
     departureAirport: z.string().min(1, "Departure is required"),
     arrivalAirport: z.string().min(1, "Arrival is required"),
     routeLabel: z.string().optional(),
@@ -74,6 +75,8 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
     pilotId: pilotId || null,
     secondPilotId: secondPilotId || null,
     status: rest.hours > 0 ? ("COMPLETED" as const) : ("PLANNED" as const),
+    // A simulator doesn't cover real distance, regardless of what was submitted.
+    miles: rest.isSimulator ? 0 : rest.miles,
   };
 
   const tripId = await prisma.$transaction(async (tx) => {

@@ -45,6 +45,7 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
       id: trip.id,
       date: trip.date.toISOString().slice(0, 10),
       endDate: trip.endDate ? trip.endDate.toISOString().slice(0, 10) : "",
+      isSimulator: trip.isSimulator,
       departureAirport: trip.departureAirport,
       arrivalAirport: trip.arrivalAirport,
       routeLabel: trip.routeLabel ?? "",
@@ -79,6 +80,11 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
           {row.original.status === "PLANNED" && (
             <Badge variant="outline" className="text-[10px]">
               Planned
+            </Badge>
+          )}
+          {row.original.isSimulator && (
+            <Badge variant="outline" className="text-[10px]">
+              Sim
             </Badge>
           )}
         </div>

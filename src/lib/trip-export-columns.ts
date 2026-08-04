@@ -6,6 +6,7 @@ export interface TripExportColumn {
 export const TRIP_EXPORT_COLUMNS: TripExportColumn[] = [
   { key: "date", label: "Date" },
   { key: "endDate", label: "End date" },
+  { key: "isSimulator", label: "Simulator" },
   { key: "departureAirport", label: "Departure" },
   { key: "arrivalAirport", label: "Arrival" },
   { key: "routeLabel", label: "Route" },

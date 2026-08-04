@@ -89,13 +89,13 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
   const ytdRange = getYtdRange(reportDate, fiscalYearStartMonth);
 
   const [allTime, ytd, priorFy, upcoming] = await Promise.all([
-    prisma.trip.aggregate({ where: { archived: false }, _sum: { hours: true, cycles: true } }),
+    prisma.trip.aggregate({ where: { archived: false, isSimulator: false }, _sum: { hours: true, cycles: true } }),
     prisma.trip.aggregate({
-      where: { archived: false, date: { gte: ytdRange.start, lt: ytdRange.end } },
+      where: { archived: false, isSimulator: false, date: { gte: ytdRange.start, lt: ytdRange.end } },
       _sum: { hours: true, cycles: true },
     }),
     prisma.trip.aggregate({
-      where: { archived: false, date: { gte: priorFyStart, lt: fyStart } },
+      where: { archived: false, isSimulator: false, date: { gte: priorFyStart, lt: fyStart } },
       _sum: { hours: true, cycles: true },
     }),
     prisma.trip.findMany({

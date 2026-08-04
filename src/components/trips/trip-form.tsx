@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
@@ -26,6 +27,7 @@ export interface TripFormValue {
   id: string;
   date: string;
   endDate: string;
+  isSimulator: boolean;
   departureAirport: string;
   arrivalAirport: string;
   routeLabel: string;
@@ -52,6 +54,7 @@ function emptyValue(): TripFormValue {
     id: "",
     date: new Date().toISOString().slice(0, 10),
     endDate: "",
+    isSimulator: false,
     departureAirport: "",
     arrivalAirport: "",
     routeLabel: "",
@@ -152,12 +155,13 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       id: value.id || undefined,
       date: value.date,
       endDate: value.endDate || undefined,
+      isSimulator: value.isSimulator,
       departureAirport: value.departureAirport,
       arrivalAirport: value.arrivalAirport,
       routeLabel: value.routeLabel,
       hours: value.hours,
       cycles: String(takeoffSum),
-      miles: value.miles,
+      miles: value.isSimulator ? "0" : value.miles,
       purpose: value.purpose,
       notes: value.notes,
       pilotId: value.pilotId,
@@ -236,6 +240,21 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
           </div>
         </div>
 
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <div>
+            <Label htmlFor="tr-simulator">Simulator session</Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Counts toward currency and duty-day/flight-hour tracking, but not toward the aircraft&apos;s hours or
+              miles.
+            </p>
+          </div>
+          <Switch
+            id="tr-simulator"
+            checked={value.isSimulator}
+            onCheckedChange={(isSimulator) => setValue((v) => ({ ...v, isSimulator, miles: isSimulator ? "0" : v.miles }))}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="tr-dep">Departure</Label>
@@ -291,8 +310,20 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
             <Input id="tr-cycles" type="number" value={takeoffSum} readOnly className="bg-secondary/50" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="tr-miles">Miles</Label>
-            <Input id="tr-miles" type="number" step="1" min="0" value={value.miles} onChange={(e) => setValue((v) => ({ ...v, miles: e.target.value }))} required />
+            <Label htmlFor="tr-miles">
+              Miles{value.isSimulator && <span className="ml-1 font-normal text-muted-foreground">(n/a)</span>}
+            </Label>
+            <Input
+              id="tr-miles"
+              type="number"
+              step="1"
+              min="0"
+              value={value.isSimulator ? "0" : value.miles}
+              onChange={(e) => setValue((v) => ({ ...v, miles: e.target.value }))}
+              disabled={value.isSimulator}
+              className={value.isSimulator ? "bg-secondary/50" : undefined}
+              required
+            />
           </div>
         </div>
 

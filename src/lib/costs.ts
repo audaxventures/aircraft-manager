@@ -194,7 +194,7 @@ export async function getMonthlySummaryGrid(
       select: { date: true, categoryId: true, amount: true },
     }),
     prisma.trip.findMany({
-      where: { archived: false, date: { gte: start, lt: end } },
+      where: { archived: false, isSimulator: false, date: { gte: start, lt: end } },
       select: { date: true, hours: true, miles: true },
     }),
   ]);

@@ -118,6 +118,7 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                           <View style={[styles.itemDot, { backgroundColor: item.color }]} />
                           <Text style={styles.itemText} hyphenationCallback={(word) => [word]}>
                             {item.title}
+                            {item.isSimulator ? " (Sim)" : ""}
                           </Text>
                         </View>
                       ))}

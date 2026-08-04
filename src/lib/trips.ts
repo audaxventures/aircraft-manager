@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 
+// Real aircraft utilization only -- simulator sessions are excluded since
+// they burn no airframe time or fuel (they still show up in the Trips list
+// itself, just not in stats meant to represent the aircraft's flying).
 export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
   const agg = await prisma.trip.aggregate({
-    where: { archived: false, ...(range ? { date: { gte: range.start, lt: range.end } } : {}) },
+    where: { archived: false, isSimulator: false, ...(range ? { date: { gte: range.start, lt: range.end } } : {}) },
     _sum: { hours: true, miles: true },
     _count: true,
   });
@@ -20,6 +23,7 @@ export interface TripDto {
   status: "PLANNED" | "COMPLETED";
   date: Date;
   endDate: Date | null;
+  isSimulator: boolean;
   departureAirport: string;
   arrivalAirport: string;
   routeLabel: string | null;
@@ -88,6 +92,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
     status: t.status,
     date: t.date,
     endDate: t.endDate,
+    isSimulator: t.isSimulator,
     departureAirport: t.departureAirport,
     arrivalAirport: t.arrivalAirport,
     routeLabel: t.routeLabel,

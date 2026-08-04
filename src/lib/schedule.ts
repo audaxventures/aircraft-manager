@@ -15,6 +15,7 @@ export interface CalendarItemDto {
   pilotName: string | null;
   notes: string | null;
   tripStatus: "PLANNED" | "COMPLETED" | null;
+  isSimulator: boolean;
 }
 
 const TRIP_COLOR = "#171717";
@@ -54,12 +55,13 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     startDate: t.date,
     endDate: t.endDate ?? t.date,
     color: TRIP_COLOR,
-    categoryLabel: t.status === "PLANNED" ? "Planned trip" : "Trip",
+    categoryLabel: t.isSimulator ? "Simulator" : t.status === "PLANNED" ? "Planned trip" : "Trip",
     categoryId: null,
     pilotId: t.pilotId,
     pilotName: t.pilot?.name ?? null,
     notes: t.notes,
     tripStatus: t.status,
+    isSimulator: t.isSimulator,
   }));
 
   const eventItems: CalendarItemDto[] = events.map((e) => ({
@@ -76,6 +78,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     pilotName: e.pilot?.name ?? null,
     notes: e.notes,
     tripStatus: null,
+    isSimulator: false,
   }));
 
   return [...tripItems, ...eventItems].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());

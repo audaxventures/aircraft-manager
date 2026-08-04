@@ -1,0 +1,1 @@
+ALTER TABLE "Trip" ADD COLUMN     "isSimulator" BOOLEAN NOT NULL DEFAULT false;

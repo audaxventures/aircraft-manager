@@ -74,7 +74,7 @@ function CalendarGrid({ year, month, items, onEventClick }: CalendarGridProps) {
                     <Link
                       key={item.id}
                       href="/trips"
-                      title={`${item.title} — view or complete in Trips`}
+                      title={`${item.title}${item.isSimulator ? " (Simulator)" : ""} — view or complete in Trips`}
                       className={cn(
                         "flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px]",
                         item.tripStatus === "PLANNED"
@@ -83,7 +83,10 @@ function CalendarGrid({ year, month, items, onEventClick }: CalendarGridProps) {
                       )}
                     >
                       <PlaneTakeoff className="size-2.5 shrink-0" />
-                      <span className="truncate">{item.title}</span>
+                      <span className="truncate">
+                        {item.title}
+                        {item.isSimulator && " (Sim)"}
+                      </span>
                     </Link>
                   )
                 )}

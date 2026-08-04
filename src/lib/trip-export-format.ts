@@ -8,6 +8,8 @@ export function getTripColumnValue(trip: TripDto, key: string): string {
       return formatDate(trip.date);
     case "endDate":
       return trip.endDate ? formatDate(trip.endDate) : "";
+    case "isSimulator":
+      return trip.isSimulator ? "Yes" : "No";
     case "departureAirport":
       return trip.departureAirport;
     case "arrivalAirport":
