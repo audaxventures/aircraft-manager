@@ -15,7 +15,6 @@ export interface CalendarItemDto {
   pilotName: string | null;
   notes: string | null;
   tripStatus: "PLANNED" | "COMPLETED" | null;
-  isSimulator: boolean;
 }
 
 const TRIP_COLOR = "#171717";
@@ -34,6 +33,9 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     prisma.trip.findMany({
       where: {
         archived: false,
+        // Simulator sessions don't appear on the Schedule/calendar -- they're
+        // not operational aircraft activity, just training tracked on Trips.
+        isSimulator: false,
         date: { lt: end },
         OR: [{ endDate: { gte: start } }, { endDate: null, date: { gte: start } }],
       },
@@ -55,13 +57,12 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     startDate: t.date,
     endDate: t.endDate ?? t.date,
     color: TRIP_COLOR,
-    categoryLabel: t.isSimulator ? "Simulator" : t.status === "PLANNED" ? "Planned trip" : "Trip",
+    categoryLabel: t.status === "PLANNED" ? "Planned trip" : "Trip",
     categoryId: null,
     pilotId: t.pilotId,
     pilotName: t.pilot?.name ?? null,
     notes: t.notes,
     tripStatus: t.status,
-    isSimulator: t.isSimulator,
   }));
 
   const eventItems: CalendarItemDto[] = events.map((e) => ({
@@ -78,7 +79,6 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     pilotName: e.pilot?.name ?? null,
     notes: e.notes,
     tripStatus: null,
-    isSimulator: false,
   }));
 
   return [...tripItems, ...eventItems].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
