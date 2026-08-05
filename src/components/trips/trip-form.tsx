@@ -244,8 +244,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
           <div>
             <Label htmlFor="tr-simulator">Simulator session</Label>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Counts toward currency and duty-day/flight-hour tracking, but not toward the aircraft&apos;s hours or
-              miles.
+              Counts toward currency and duty-day/flight-hour tracking, but not toward the aircraft&apos;s hours,
+              cycles, or miles.
             </p>
           </div>
           <Switch
