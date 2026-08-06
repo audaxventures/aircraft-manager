@@ -22,12 +22,11 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: "14.2857%",
-    height: 80,
+    minHeight: 80,
     borderRightWidth: 0.5,
     borderBottomWidth: 0.5,
     borderColor: "#d4d4d4",
     padding: 3,
-    overflow: "hidden",
   },
   dayCellOutside: { backgroundColor: "#fafafa" },
   dayNumber: { fontSize: 9.5, fontFamily: "Helvetica-Bold", marginBottom: 2, color: "#171717" },
@@ -81,7 +80,7 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
       {months.map(({ year, month, items }) => {
         const weeks = buildWeeks(year, month);
         return (
-          <Page key={`${year}-${month}`} size="LETTER" orientation="landscape" style={s.page} wrap={false}>
+          <Page key={`${year}-${month}`} size="LETTER" orientation="landscape" style={s.page}>
             <View style={s.headerBlock}>
               <Text style={s.title}>Monthly Schedule</Text>
               <Text style={s.subtitle}>
@@ -104,7 +103,7 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
             </View>
 
             {weeks.map((week, wi) => (
-              <View key={wi} style={styles.weekRow}>
+              <View key={wi} style={styles.weekRow} wrap={false}>
                 {week.map((day) => {
                   const key = toKey(day);
                   const dayTime = day.getTime();
@@ -113,15 +112,14 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                   return (
                     <View key={key} style={[styles.dayCell, inMonth ? {} : styles.dayCellOutside]}>
                       <Text style={[styles.dayNumber, inMonth ? {} : styles.dayNumberOutside]}>{day.getUTCDate()}</Text>
-                      {dayItems.slice(0, 2).map((item) => (
-                        <View key={item.id} style={styles.itemRow}>
+                      {dayItems.map((item) => (
+                        <View key={item.id} style={styles.itemRow} wrap={false}>
                           <View style={[styles.itemDot, { backgroundColor: item.color }]} />
                           <Text style={styles.itemText} hyphenationCallback={(word) => [word]}>
                             {item.title}
                           </Text>
                         </View>
                       ))}
-                      {dayItems.length > 2 && <Text style={styles.itemText}>+{dayItems.length - 2} more</Text>}
                     </View>
                   );
                 })}
