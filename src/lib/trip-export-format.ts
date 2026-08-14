@@ -26,6 +26,8 @@ export function getTripColumnValue(trip: TripDto, key: string): string {
       return trip.takeoffTime !== null ? formatDecimalHour(trip.takeoffTime) : "";
     case "landingTime":
       return trip.landingTime !== null ? formatDecimalHour(trip.landingTime) : "";
+    case "returnDepartureTime":
+      return trip.returnDepartureTime !== null ? formatDecimalHour(trip.returnDepartureTime) : "";
     case "pilotName":
       return trip.pilotName ?? "";
     case "secondPilotName":

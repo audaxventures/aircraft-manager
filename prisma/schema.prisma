@@ -151,6 +151,11 @@ model Trip {
   // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded up to the nearest 6 minutes.
   takeoffTime       Decimal?        @db.Decimal(4, 1)
   landingTime       Decimal?        @db.Decimal(4, 1)
+  // For a multi-day trip (endDate set): the departure time of the return
+  // leg, shown on the Schedule only on endDate. Display-only -- unlike
+  // takeoffTime/landingTime, it doesn't feed hours, cycles, or duty-day
+  // calculations.
+  returnDepartureTime Decimal?      @db.Decimal(4, 1)
   dayTakeoffs       Int             @default(0)
   dayLandings       Int             @default(0)
   nightTakeoffs     Int             @default(0)

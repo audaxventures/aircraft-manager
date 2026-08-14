@@ -38,6 +38,7 @@ export interface TripDto {
   secondPilotName: string | null;
   takeoffTime: number | null;
   landingTime: number | null;
+  returnDepartureTime: number | null;
   dayTakeoffs: number;
   dayLandings: number;
   nightTakeoffs: number;
@@ -107,6 +108,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
     secondPilotName: t.secondPilot?.name ?? null,
     takeoffTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : null,
     landingTime: t.landingTime !== null ? toNumber(t.landingTime) : null,
+    returnDepartureTime: t.returnDepartureTime !== null ? toNumber(t.returnDepartureTime) : null,
     dayTakeoffs: t.dayTakeoffs,
     dayLandings: t.dayLandings,
     nightTakeoffs: t.nightTakeoffs,

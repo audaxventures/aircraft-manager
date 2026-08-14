@@ -41,6 +41,7 @@ const tripSchema = z
     secondPilotId: z.string().optional(),
     takeoffTime: timeSchema,
     landingTime: timeSchema,
+    returnDepartureTime: timeSchema,
     dayTakeoffs: z.coerce.number().int().nonnegative(),
     dayLandings: z.coerce.number().int().nonnegative(),
     nightTakeoffs: z.coerce.number().int().nonnegative(),
@@ -56,6 +57,10 @@ const tripSchema = z
   .refine((d) => !d.pilotId || !d.secondPilotId || d.pilotId !== d.secondPilotId, {
     message: "Pilot in command and second in command must be different pilots",
     path: ["secondPilotId"],
+  })
+  .refine((d) => !d.returnDepartureTime || !!d.endDate, {
+    message: "Set an end date before adding a return departure time.",
+    path: ["returnDepartureTime"],
   });
 
 export async function saveTrip(input: unknown): Promise<ActionResult> {

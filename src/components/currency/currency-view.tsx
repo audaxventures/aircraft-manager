@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SlideOver } from "@/components/shared/slide-over";
 import { formatDate } from "@/lib/format";
 import { toCsv, downloadCsv } from "@/lib/csv";
+import { useHiddenPilots } from "@/hooks/use-hidden-pilots";
 import { daysUntil, type PilotCurrency } from "@/lib/currency-shared";
 
 interface CurrencyViewProps {
@@ -25,8 +26,10 @@ function statusLabel(current: boolean, lapseDate: Date | null): string {
   return `Current until ${formatDate(lapseDate)}`;
 }
 
-function CurrencyView({ currencies }: CurrencyViewProps) {
+function CurrencyView({ currencies: allCurrencies }: CurrencyViewProps) {
   const [detail, setDetail] = React.useState<PilotCurrency | null>(null);
+  const { hidden } = useHiddenPilots();
+  const currencies = allCurrencies.filter((c) => !hidden.has(c.pilotId));
 
   function exportCsv() {
     const csv = toCsv(currencies, [

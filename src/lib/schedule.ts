@@ -15,6 +15,11 @@ export interface CalendarItemDto {
   pilotName: string | null;
   notes: string | null;
   tripStatus: "PLANNED" | "COMPLETED" | null;
+  // UTC decimal hours, shown only on the matching day: departureTime on
+  // startDate, returnTime on endDate (only meaningful when endDate differs
+  // from startDate, i.e. a multi-day trip). Always null for events.
+  departureTime: number | null;
+  returnTime: number | null;
 }
 
 const TRIP_COLOR = "#171717";
@@ -63,6 +68,8 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     pilotName: t.pilot?.name ?? null,
     notes: t.notes,
     tripStatus: t.status,
+    departureTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : null,
+    returnTime: t.returnDepartureTime !== null ? toNumber(t.returnDepartureTime) : null,
   }));
 
   const eventItems: CalendarItemDto[] = events.map((e) => ({
@@ -79,6 +86,8 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     pilotName: e.pilot?.name ?? null,
     notes: e.notes,
     tripStatus: null,
+    departureTime: null,
+    returnTime: null,
   }));
 
   return [...tripItems, ...eventItems].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
