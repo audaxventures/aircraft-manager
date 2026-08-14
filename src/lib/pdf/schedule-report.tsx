@@ -1,7 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 import { pdfStyles as s } from "@/lib/pdf/styles";
-import { decimalHourToHHMM } from "@/lib/flight-time";
 import type { CalendarItemDto } from "@/lib/schedule";
 
 const MONTH_LABELS = [
@@ -54,18 +53,6 @@ const MIN_SCALE = 0.35;
 
 function toKey(d: Date) {
   return d.toISOString().slice(0, 10);
-}
-
-/** Departure time only labels the trip's start day; return time only labels its end day. */
-function labelForDay(item: CalendarItemDto, day: Date): string {
-  const dayKey = toKey(day);
-  if (dayKey === toKey(item.startDate) && item.departureTime !== null) {
-    return `${item.title} · Dep ${decimalHourToHHMM(item.departureTime)}`;
-  }
-  if (dayKey === toKey(item.endDate) && dayKey !== toKey(item.startDate) && item.returnTime !== null) {
-    return `${item.title} · Ret ${decimalHourToHHMM(item.returnTime)}`;
-  }
-  return item.title;
 }
 
 function buildWeeks(year: number, month: number): Date[][] {
@@ -172,9 +159,16 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                       <Text style={[dayNumberStyle, inMonth ? {} : styles.dayNumberOutside]}>{day.getUTCDate()}</Text>
                       {dayItems.map((item) => (
                         <View key={item.id} style={[styles.itemRow, { marginBottom: 2 * scale }]} wrap={false}>
-                          <View style={[itemDotStyle, { backgroundColor: item.color }]} />
-                          <Text style={[styles.itemText, itemTextStyle]} hyphenationCallback={(word) => [word]}>
-                            {labelForDay(item, day)}
+                          {item.kind !== "stationary" && <View style={[itemDotStyle, { backgroundColor: item.color }]} />}
+                          <Text
+                            style={[
+                              styles.itemText,
+                              itemTextStyle,
+                              item.kind === "stationary" ? { fontFamily: "Helvetica-Oblique", color: "#737373" } : {},
+                            ]}
+                            hyphenationCallback={(word) => [word]}
+                          >
+                            {item.title}
                           </Text>
                         </View>
                       ))}

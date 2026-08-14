@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db";
 import { toNumber } from "@/lib/format";
+import { decimalHourTo12Hour } from "@/lib/flight-time";
 
 export interface CalendarItemDto {
   id: string;
-  kind: "trip" | "event";
+  kind: "trip" | "event" | "stationary";
   title: string;
   subtitle: string | null;
   startDate: Date;
@@ -15,14 +16,10 @@ export interface CalendarItemDto {
   pilotName: string | null;
   notes: string | null;
   tripStatus: "PLANNED" | "COMPLETED" | null;
-  // UTC decimal hours, shown only on the matching day: departureTime on
-  // startDate, returnTime on endDate (only meaningful when endDate differs
-  // from startDate, i.e. a multi-day trip). Always null for events.
-  departureTime: number | null;
-  returnTime: number | null;
 }
 
 const TRIP_COLOR = "#171717";
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export function getMonthRange(year: number, month: number) {
   // month is 0-indexed
@@ -44,7 +41,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
         date: { lt: end },
         OR: [{ endDate: { gte: start } }, { endDate: null, date: { gte: start } }],
       },
-      include: { pilot: true },
+      include: { pilot: true, legs: { orderBy: { legOrder: "asc" } } },
       orderBy: { date: "asc" },
     }),
     prisma.calendarEvent.findMany({
@@ -54,23 +51,58 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     }),
   ]);
 
-  const tripItems: CalendarItemDto[] = trips.map((t) => ({
-    id: t.id,
-    kind: "trip",
-    title: t.routeLabel || `${t.departureAirport} – ${t.arrivalAirport}`,
-    subtitle: t.status === "PLANNED" ? "Planned trip" : toNumber(t.hours) > 0 ? `${toNumber(t.hours)} hrs` : null,
-    startDate: t.date,
-    endDate: t.endDate ?? t.date,
-    color: TRIP_COLOR,
-    categoryLabel: t.status === "PLANNED" ? "Planned trip" : "Trip",
-    categoryId: null,
-    pilotId: t.pilotId,
-    pilotName: t.pilot?.name ?? null,
-    notes: t.notes,
-    tripStatus: t.status,
-    departureTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : null,
-    returnTime: t.returnDepartureTime !== null ? toNumber(t.returnDepartureTime) : null,
-  }));
+  const tripItems: CalendarItemDto[] = [];
+  for (const t of trips) {
+    const legs = t.legs;
+    for (let i = 0; i < legs.length; i++) {
+      const leg = legs[i];
+      const routeText = `${leg.departureAirport} → ${leg.arrivalAirport}`;
+      const departureTime = leg.departureTime !== null ? toNumber(leg.departureTime) : null;
+      const title = departureTime !== null ? `${routeText} · Dep ${decimalHourTo12Hour(departureTime)}` : routeText;
+      const hours = toNumber(leg.hours);
+
+      tripItems.push({
+        id: `${t.id}-leg-${leg.id}`,
+        kind: "trip",
+        title,
+        subtitle: t.status === "PLANNED" ? "Planned trip" : hours > 0 ? `${hours} hrs` : null,
+        startDate: leg.date,
+        endDate: leg.date,
+        color: TRIP_COLOR,
+        categoryLabel: t.status === "PLANNED" ? "Planned trip" : "Trip",
+        categoryId: null,
+        pilotId: t.pilotId,
+        pilotName: t.pilot?.name ?? null,
+        notes: t.notes,
+        tripStatus: t.status,
+      });
+
+      // Days strictly between this leg and the next are spent at this leg's
+      // destination -- show a placeholder rather than repeating the trip's
+      // full route label on every day it spans.
+      const nextLeg = legs[i + 1];
+      if (nextLeg) {
+        for (let time = leg.date.getTime() + ONE_DAY_MS; time < nextLeg.date.getTime(); time += ONE_DAY_MS) {
+          const day = new Date(time);
+          tripItems.push({
+            id: `${t.id}-stationary-${day.toISOString().slice(0, 10)}`,
+            kind: "stationary",
+            title: `At ${leg.arrivalAirport}`,
+            subtitle: null,
+            startDate: day,
+            endDate: day,
+            color: TRIP_COLOR,
+            categoryLabel: "Stationary",
+            categoryId: null,
+            pilotId: t.pilotId,
+            pilotName: t.pilot?.name ?? null,
+            notes: null,
+            tripStatus: t.status,
+          });
+        }
+      }
+    }
+  }
 
   const eventItems: CalendarItemDto[] = events.map((e) => ({
     id: e.id,
@@ -86,8 +118,6 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     pilotName: e.pilot?.name ?? null,
     notes: e.notes,
     tripStatus: null,
-    departureTime: null,
-    returnTime: null,
   }));
 
   return [...tripItems, ...eventItems].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());

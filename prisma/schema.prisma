@@ -131,39 +131,32 @@ enum TripStatus {
   COMPLETED
 }
 
+// A trip is a container for one or more legs (see TripLeg). Pilot(s),
+// purpose, notes, passengers, and the simulator flag apply to the whole
+// trip; date/endDate/hours/cycles/miles/routeLabel are denormalized
+// aggregates recomputed from the trip's legs every time they're saved, so
+// existing date-range queries and hours/cost calculations that only need
+// the trip level keep working without joining TripLeg.
 model Trip {
   id                String          @id @default(cuid())
   status            TripStatus      @default(COMPLETED)
+  // Aggregates: date = earliest leg date, endDate = latest leg date (null
+  // when there's only one leg), hours/cycles/miles = sum across legs.
   date              DateTime
   endDate           DateTime?
-  departureAirport  String
-  arrivalAirport    String
-  routeLabel        String?
   hours             Decimal         @default(0) @db.Decimal(6, 2)
   cycles            Int             @default(0)
   miles             Int             @default(0)
+  // Optional override for the trip-level summary label (Trips list, exports).
+  // Falls back to "first leg departure - last leg arrival" when blank.
+  routeLabel        String?
   purpose           String?
   notes             String?
   pilotId           String?
   pilot             Pilot?          @relation("TripPilotInCommand", fields: [pilotId], references: [id], onDelete: SetNull)
   secondPilotId     String?
   secondPilot       Pilot?          @relation("TripSecondInCommand", fields: [secondPilotId], references: [id], onDelete: SetNull)
-  // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded up to the nearest 6 minutes.
-  takeoffTime       Decimal?        @db.Decimal(4, 1)
-  landingTime       Decimal?        @db.Decimal(4, 1)
-  // For a multi-day trip (endDate set): the departure time of the return
-  // leg, shown on the Schedule only on endDate. Display-only -- unlike
-  // takeoffTime/landingTime, it doesn't feed hours, cycles, or duty-day
-  // calculations.
-  returnDepartureTime Decimal?      @db.Decimal(4, 1)
-  dayTakeoffs       Int             @default(0)
-  dayLandings       Int             @default(0)
-  nightTakeoffs     Int             @default(0)
-  nightLandings     Int             @default(0)
-  // Instrument approaches conducted by each pilot on this trip, toward CAR
-  // 401.05(2) instrument-approach recency (tracked per pilot, not per trip).
-  pilotInstrumentApproaches       Int @default(0)
-  secondPilotInstrumentApproaches Int @default(0)
+  legs              TripLeg[]
   passengers        TripPassenger[]
   attachments       Attachment[]
   // Simulator training session rather than a real flight. Still counts
@@ -182,6 +175,43 @@ model Trip {
   @@index([pilotId])
   @@index([secondPilotId])
   @@index([status])
+}
+
+// One flown segment of a trip (e.g. outbound / a fuel or passenger stop /
+// return). A single-day trip has exactly one leg; a multi-day trip can have
+// any number, each on its own date, so the Schedule can show the right
+// route on the right day instead of repeating the whole trip label across
+// every day it spans.
+model TripLeg {
+  id                String   @id @default(cuid())
+  tripId            String
+  trip              Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  legOrder          Int
+  date              DateTime
+  departureAirport  String
+  arrivalAirport    String
+  // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded to the nearest 6 minutes.
+  departureTime     Decimal? @db.Decimal(4, 1)
+  landingTime       Decimal? @db.Decimal(4, 1)
+  hours             Decimal  @default(0) @db.Decimal(6, 2)
+  // Derived from takeoffs, not separately entered (a leg can have any number
+  // of takeoffs/landings, e.g. touch-and-goes in training).
+  cycles            Int      @default(0)
+  miles             Int      @default(0)
+  dayTakeoffs       Int      @default(0)
+  dayLandings       Int      @default(0)
+  nightTakeoffs     Int      @default(0)
+  nightLandings     Int      @default(0)
+  // Instrument approaches conducted by each pilot on this leg, toward CAR
+  // 401.05(2) instrument-approach recency (tracked per pilot, not per leg
+  // in isolation -- summed across legs for currency).
+  pilotInstrumentApproaches       Int @default(0)
+  secondPilotInstrumentApproaches Int @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tripId])
+  @@index([date])
 }
 
 model TripPassenger {

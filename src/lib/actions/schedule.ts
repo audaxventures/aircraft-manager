@@ -64,16 +64,26 @@ export async function savePlannedTrip(input: unknown): Promise<ActionResult> {
   const parsed = plannedTripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { endDate, pilotId, secondPilotId, notes, ...rest } = parsed.data;
+  const { date, endDate, departureAirport, arrivalAirport, pilotId, secondPilotId, notes } = parsed.data;
+  const hasReturn = !!endDate && endDate.getTime() !== date.getTime();
   const trip = await prisma.trip.create({
     data: {
-      ...rest,
-      endDate: endDate ?? null,
+      date,
+      endDate: hasReturn ? endDate : null,
       pilotId: pilotId || null,
       secondPilotId: secondPilotId || null,
       notes: notes || null,
       status: "PLANNED",
-      routeLabel: `${rest.departureAirport} - ${rest.arrivalAirport}`,
+      routeLabel: `${departureAirport} - ${arrivalAirport}`,
+      legs: {
+        create: [
+          { legOrder: 0, date, departureAirport, arrivalAirport },
+          // A placeholder return leg so the Schedule shows "At {destination}"
+          // for the days in between and the return date itself, even before
+          // the actual return flight's times are known.
+          ...(hasReturn ? [{ legOrder: 1, date: endDate, departureAirport: arrivalAirport, arrivalAirport: departureAirport }] : []),
+        ],
+      },
     },
   });
 

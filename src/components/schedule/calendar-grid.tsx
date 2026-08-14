@@ -6,7 +6,6 @@ import { PlaneTakeoff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import { decimalHourToHHMM } from "@/lib/flight-time";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { CalendarItemDto } from "@/lib/schedule";
 
@@ -16,50 +15,43 @@ function toKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Departure time only labels the trip's start day; return time only labels its end day. */
-function labelForDay(item: CalendarItemDto, day: Date): string {
-  const dayKey = toKey(day);
-  if (dayKey === toKey(item.startDate) && item.departureTime !== null) {
-    return `${item.title} · Dep ${decimalHourToHHMM(item.departureTime)}`;
-  }
-  if (dayKey === toKey(item.endDate) && dayKey !== toKey(item.startDate) && item.returnTime !== null) {
-    return `${item.title} · Ret ${decimalHourToHHMM(item.returnTime)}`;
-  }
-  return item.title;
-}
-
 function ItemPill({
   item,
-  day,
   onEventClick,
   size = "sm",
 }: {
   item: CalendarItemDto;
-  day: Date;
   onEventClick: (item: CalendarItemDto) => void;
   size?: "sm" | "md";
 }) {
   const padding = size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs";
-  const label = labelForDay(item, day);
 
   if (item.kind === "event") {
     return (
       <button
         type="button"
         onClick={() => onEventClick(item)}
-        title={label}
+        title={item.title}
         className={cn("block w-full truncate rounded text-left text-white", padding)}
         style={{ backgroundColor: item.color }}
       >
-        {label}
+        {item.title}
       </button>
+    );
+  }
+
+  if (item.kind === "stationary") {
+    return (
+      <div title={item.title} className={cn("truncate rounded text-muted-foreground italic", padding)}>
+        {item.title}
+      </div>
     );
   }
 
   return (
     <Link
       href="/trips"
-      title={`${label} — view or complete in Trips`}
+      title={`${item.title} — view or complete in Trips`}
       className={cn(
         "flex items-center gap-1 truncate rounded",
         padding,
@@ -67,7 +59,7 @@ function ItemPill({
       )}
     >
       <PlaneTakeoff className="size-2.5 shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="truncate">{item.title}</span>
     </Link>
   );
 }
@@ -106,7 +98,7 @@ function DayCell({
       </div>
       <div className="space-y-1">
         {visible.map((item) => (
-          <ItemPill key={item.id} item={item} day={day} onEventClick={onEventClick} />
+          <ItemPill key={item.id} item={item} onEventClick={onEventClick} />
         ))}
         {overflow > 0 && (
           <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
@@ -121,7 +113,7 @@ function DayCell({
             <PopoverContent className="w-64 space-y-1.5 p-2" align="start">
               <div className="px-1 text-xs font-medium text-muted-foreground">{formatDate(day)}</div>
               {dayItems.map((item) => (
-                <ItemPill key={item.id} item={item} day={day} onEventClick={handleOverflowItemClick} size="md" />
+                <ItemPill key={item.id} item={item} onEventClick={handleOverflowItemClick} size="md" />
               ))}
             </PopoverContent>
           </Popover>

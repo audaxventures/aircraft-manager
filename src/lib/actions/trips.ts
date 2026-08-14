@@ -23,65 +23,76 @@ const timeSchema = z
     return parsed;
   });
 
-const tripSchema = z
+const legSchema = z
   .object({
-    id: z.string().optional(),
     date: z.coerce.date(),
-    endDate: z.coerce.date().optional(),
-    isSimulator: z.boolean().default(false),
     departureAirport: z.string().min(1, "Departure is required"),
     arrivalAirport: z.string().min(1, "Arrival is required"),
-    routeLabel: z.string().optional(),
-    hours: z.coerce.number({ message: "Enter valid hours" }).nonnegative(),
-    cycles: z.coerce.number().int().nonnegative(),
-    miles: z.coerce.number().int().nonnegative(),
-    purpose: z.string().optional(),
-    notes: z.string().optional(),
-    pilotId: z.string().optional(),
-    secondPilotId: z.string().optional(),
-    takeoffTime: timeSchema,
+    departureTime: timeSchema,
     landingTime: timeSchema,
-    returnDepartureTime: timeSchema,
+    hours: z.coerce.number({ message: "Enter valid hours" }).nonnegative(),
+    miles: z.coerce.number().int().nonnegative(),
     dayTakeoffs: z.coerce.number().int().nonnegative(),
     dayLandings: z.coerce.number().int().nonnegative(),
     nightTakeoffs: z.coerce.number().int().nonnegative(),
     nightLandings: z.coerce.number().int().nonnegative(),
     pilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
     secondPilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
-    passengerIds: z.array(z.string()).default([]),
   })
   .refine((d) => d.dayTakeoffs + d.nightTakeoffs === d.dayLandings + d.nightLandings, {
-    message: "Total takeoffs must equal total landings",
+    message: "Total takeoffs must equal total landings on each leg",
     path: ["dayTakeoffs"],
+  });
+
+const tripSchema = z
+  .object({
+    id: z.string().optional(),
+    isSimulator: z.boolean().default(false),
+    routeLabel: z.string().optional(),
+    purpose: z.string().optional(),
+    notes: z.string().optional(),
+    pilotId: z.string().optional(),
+    secondPilotId: z.string().optional(),
+    passengerIds: z.array(z.string()).default([]),
+    legs: z.array(legSchema).min(1, "At least one leg is required"),
   })
   .refine((d) => !d.pilotId || !d.secondPilotId || d.pilotId !== d.secondPilotId, {
     message: "Pilot in command and second in command must be different pilots",
     path: ["secondPilotId"],
-  })
-  .refine((d) => !d.returnDepartureTime || !!d.endDate, {
-    message: "Set an end date before adding a return departure time.",
-    path: ["returnDepartureTime"],
   });
+
+/** "CYWG - CYYZ" for a single leg; "CYWG → KPSP → CYWG" for a multi-leg itinerary. */
+function autoRouteLabel(legs: { departureAirport: string; arrivalAirport: string }[]): string {
+  if (legs.length === 1) return `${legs[0].departureAirport} - ${legs[0].arrivalAirport}`;
+  return [legs[0].departureAirport, ...legs.map((l) => l.arrivalAirport)].join(" → ");
+}
 
 export async function saveTrip(input: unknown): Promise<ActionResult> {
   const parsed = tripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { id, endDate, routeLabel, purpose, notes, pilotId, secondPilotId, takeoffTime, landingTime, passengerIds, ...rest } =
-    parsed.data;
+  const { id, routeLabel, purpose, notes, pilotId, secondPilotId, passengerIds, legs, isSimulator } = parsed.data;
+
+  const legDates = legs.map((l) => l.date.getTime());
+  const minDate = new Date(Math.min(...legDates));
+  const maxDate = new Date(Math.max(...legDates));
+  const totalHours = legs.reduce((s, l) => s + l.hours, 0);
+  const totalMiles = isSimulator ? 0 : legs.reduce((s, l) => s + l.miles, 0);
+  const totalCycles = legs.reduce((s, l) => s + l.dayTakeoffs + l.nightTakeoffs, 0);
+
   const data = {
-    ...rest,
-    takeoffTime,
-    landingTime,
-    endDate: endDate ?? null,
-    routeLabel: routeLabel || `${rest.departureAirport} - ${rest.arrivalAirport}`,
+    date: minDate,
+    endDate: maxDate.getTime() !== minDate.getTime() ? maxDate : null,
+    hours: totalHours,
+    cycles: totalCycles,
+    miles: totalMiles,
+    routeLabel: routeLabel || autoRouteLabel(legs),
     purpose: purpose || null,
     notes: notes || null,
     pilotId: pilotId || null,
     secondPilotId: secondPilotId || null,
-    status: rest.hours > 0 ? ("COMPLETED" as const) : ("PLANNED" as const),
-    // A simulator doesn't cover real distance, regardless of what was submitted.
-    miles: rest.isSimulator ? 0 : rest.miles,
+    status: totalHours > 0 ? ("COMPLETED" as const) : ("PLANNED" as const),
+    isSimulator,
   };
 
   const tripId = await prisma.$transaction(async (tx) => {
@@ -89,9 +100,30 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
     if (id) {
       trip = await tx.trip.update({ where: { id }, data });
       await tx.tripPassenger.deleteMany({ where: { tripId: id } });
+      await tx.tripLeg.deleteMany({ where: { tripId: id } });
     } else {
       trip = await tx.trip.create({ data });
     }
+    await tx.tripLeg.createMany({
+      data: legs.map((l, i) => ({
+        tripId: trip.id,
+        legOrder: i,
+        date: l.date,
+        departureAirport: l.departureAirport,
+        arrivalAirport: l.arrivalAirport,
+        departureTime: l.departureTime ?? null,
+        landingTime: l.landingTime ?? null,
+        hours: l.hours,
+        cycles: l.dayTakeoffs + l.nightTakeoffs,
+        miles: isSimulator ? 0 : l.miles,
+        dayTakeoffs: l.dayTakeoffs,
+        dayLandings: l.dayLandings,
+        nightTakeoffs: l.nightTakeoffs,
+        nightLandings: l.nightLandings,
+        pilotInstrumentApproaches: l.pilotInstrumentApproaches,
+        secondPilotInstrumentApproaches: l.secondPilotInstrumentApproaches,
+      })),
+    });
     if (passengerIds.length > 0) {
       await tx.tripPassenger.createMany({
         data: passengerIds.map((passengerId) => ({ tripId: trip.id, passengerId })),
@@ -100,14 +132,19 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
     return trip.id;
   });
 
-  if (takeoffTime !== undefined && landingTime !== undefined) {
-    const reportTime = decimalHourToUtcDate(data.date, takeoffTime - 1);
-    const landingForDutyCalc = landingTime < takeoffTime ? landingTime + 24 : landingTime;
-    const dutyEndTime = decimalHourToUtcDate(data.date, landingForDutyCalc + 0.5);
-
-    const pilotIds = [...new Set([data.pilotId, data.secondPilotId].filter((p): p is string => !!p))];
+  // One duty-day upsert per leg that has both a departure and landing time --
+  // upsertDutyDayLogFromTrip widens an existing same-pilot/same-date entry
+  // rather than creating a conflicting second one, so multiple legs flown by
+  // the same pilot on the same calendar day naturally collapse into a single
+  // duty day log entry.
+  const pilotIds = [...new Set([data.pilotId, data.secondPilotId].filter((p): p is string => !!p))];
+  for (const leg of legs) {
+    if (leg.departureTime === undefined || leg.landingTime === undefined) continue;
+    const reportTime = decimalHourToUtcDate(leg.date, leg.departureTime - 1);
+    const landingForDutyCalc = leg.landingTime < leg.departureTime ? leg.landingTime + 24 : leg.landingTime;
+    const dutyEndTime = decimalHourToUtcDate(leg.date, landingForDutyCalc + 0.5);
     for (const pid of pilotIds) {
-      await upsertDutyDayLogFromTrip(pid, data.date, reportTime, dutyEndTime);
+      await upsertDutyDayLogFromTrip(pid, leg.date, reportTime, dutyEndTime);
     }
   }
 

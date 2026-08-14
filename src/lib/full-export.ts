@@ -37,7 +37,12 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
       prisma.regulatorySettings.findMany(),
       prisma.trip.findMany({
         where: { archived: false },
-        include: { pilot: true, secondPilot: true, passengers: { include: { passenger: true } } },
+        include: {
+          pilot: true,
+          secondPilot: true,
+          passengers: { include: { passenger: true } },
+          legs: { orderBy: { legOrder: "asc" } },
+        },
         orderBy: { date: "desc" },
       }),
       prisma.costEntry.findMany({
@@ -173,15 +178,6 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
     { header: "Miles", key: "miles", width: 10 },
     { header: "Pilot in Command", key: "pilot", width: 20 },
     { header: "Second in Command", key: "secondPilot", width: 20 },
-    { header: "Departure Time (UTC)", key: "takeoffTime", width: 14 },
-    { header: "Landing Time (UTC)", key: "landingTime", width: 14 },
-    { header: "Return Departure Time (UTC)", key: "returnDepartureTime", width: 16 },
-    { header: "Day Takeoffs", key: "dayTakeoffs", width: 10 },
-    { header: "Day Landings", key: "dayLandings", width: 10 },
-    { header: "Night Takeoffs", key: "nightTakeoffs", width: 10 },
-    { header: "Night Landings", key: "nightLandings", width: 10 },
-    { header: "PIC Instrument Approaches", key: "picApproaches", width: 14 },
-    { header: "SIC Instrument Approaches", key: "sicApproaches", width: 14 },
     { header: "Passengers", key: "passengers", width: 28 },
     { header: "Purpose", key: "purpose", width: 22 },
     { header: "Notes", key: "notes", width: 30 },
@@ -193,27 +189,62 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
       endDate: isoDate(t.endDate),
       status: t.status,
       isSimulator: t.isSimulator ? "Yes" : "No",
-      departure: t.departureAirport,
-      arrival: t.arrivalAirport,
+      departure: t.legs[0]?.departureAirport ?? "",
+      arrival: t.legs[t.legs.length - 1]?.arrivalAirport ?? "",
       route: t.routeLabel ?? "",
       hours: toNumber(t.hours),
       cycles: t.cycles,
       miles: t.miles,
       pilot: t.pilot?.name ?? "",
       secondPilot: t.secondPilot?.name ?? "",
-      takeoffTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : "",
-      landingTime: t.landingTime !== null ? toNumber(t.landingTime) : "",
-      returnDepartureTime: t.returnDepartureTime !== null ? toNumber(t.returnDepartureTime) : "",
-      dayTakeoffs: t.dayTakeoffs,
-      dayLandings: t.dayLandings,
-      nightTakeoffs: t.nightTakeoffs,
-      nightLandings: t.nightLandings,
-      picApproaches: t.pilotInstrumentApproaches,
-      sicApproaches: t.secondPilotInstrumentApproaches,
       passengers: t.passengers.map((p) => p.passenger.name).join("; "),
       purpose: t.purpose ?? "",
       notes: t.notes ?? "",
     });
+  }
+
+  // --- Trip Legs ---
+  const legSheet = workbook.addWorksheet("Trip Legs");
+  legSheet.columns = [
+    { header: "Trip Date", key: "tripDate", width: 12 },
+    { header: "Leg #", key: "legOrder", width: 8 },
+    { header: "Leg Date", key: "date", width: 12 },
+    { header: "Departure", key: "departure", width: 12 },
+    { header: "Arrival", key: "arrival", width: 12 },
+    { header: "Departure Time (UTC)", key: "departureTime", width: 14 },
+    { header: "Landing Time (UTC)", key: "landingTime", width: 14 },
+    { header: "Hours", key: "hours", width: 10 },
+    { header: "Cycles", key: "cycles", width: 8 },
+    { header: "Miles", key: "miles", width: 10 },
+    { header: "Day Takeoffs", key: "dayTakeoffs", width: 10 },
+    { header: "Day Landings", key: "dayLandings", width: 10 },
+    { header: "Night Takeoffs", key: "nightTakeoffs", width: 10 },
+    { header: "Night Landings", key: "nightLandings", width: 10 },
+    { header: "PIC Instrument Approaches", key: "picApproaches", width: 14 },
+    { header: "SIC Instrument Approaches", key: "sicApproaches", width: 14 },
+  ];
+  boldHeader(legSheet);
+  for (const t of trips) {
+    for (const l of t.legs) {
+      legSheet.addRow({
+        tripDate: isoDate(t.date),
+        legOrder: l.legOrder + 1,
+        date: isoDate(l.date),
+        departure: l.departureAirport,
+        arrival: l.arrivalAirport,
+        departureTime: l.departureTime !== null ? toNumber(l.departureTime) : "",
+        landingTime: l.landingTime !== null ? toNumber(l.landingTime) : "",
+        hours: toNumber(l.hours),
+        cycles: l.cycles,
+        miles: l.miles,
+        dayTakeoffs: l.dayTakeoffs,
+        dayLandings: l.dayLandings,
+        nightTakeoffs: l.nightTakeoffs,
+        nightLandings: l.nightLandings,
+        picApproaches: l.pilotInstrumentApproaches,
+        sicApproaches: l.secondPilotInstrumentApproaches,
+      });
+    }
   }
 
   // --- Cost Entries ---

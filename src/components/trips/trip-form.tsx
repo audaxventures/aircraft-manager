@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,60 +24,90 @@ export interface PilotOption {
   name: string;
 }
 
-export interface TripFormValue {
-  id: string;
+export interface TripLegFormValue {
+  key: string;
   date: string;
-  endDate: string;
-  isSimulator: boolean;
   departureAirport: string;
   arrivalAirport: string;
-  routeLabel: string;
-  hours: string;
-  cycles: string;
-  miles: string;
-  purpose: string;
-  notes: string;
-  pilotId: string;
-  secondPilotId: string;
-  takeoffTime: string;
+  departureTime: string;
   landingTime: string;
-  returnDepartureTime: string;
+  hours: string;
+  miles: string;
   dayTakeoffs: string;
   dayLandings: string;
   nightTakeoffs: string;
   nightLandings: string;
   pilotInstrumentApproaches: string;
   secondPilotInstrumentApproaches: string;
-  passengerIds: string[];
 }
 
-function emptyValue(): TripFormValue {
+export interface TripFormValue {
+  id: string;
+  isSimulator: boolean;
+  routeLabel: string;
+  purpose: string;
+  notes: string;
+  pilotId: string;
+  secondPilotId: string;
+  passengerIds: string[];
+  legs: TripLegFormValue[];
+}
+
+let legKeySeq = 0;
+function nextLegKey(): string {
+  legKeySeq += 1;
+  return `leg-${legKeySeq}`;
+}
+
+function emptyLeg(previous?: TripLegFormValue): TripLegFormValue {
   return {
-    id: "",
-    date: new Date().toISOString().slice(0, 10),
-    endDate: "",
-    isSimulator: false,
-    departureAirport: "",
+    key: nextLegKey(),
+    date: previous?.date ?? new Date().toISOString().slice(0, 10),
+    // Continuation default: a new leg usually departs from wherever the
+    // previous one arrived, which also happens to give a return leg the
+    // "flipped" route the user expects without any special-casing.
+    departureAirport: previous?.arrivalAirport ?? "",
     arrivalAirport: "",
-    routeLabel: "",
-    hours: "",
-    cycles: "1",
-    miles: "",
-    purpose: "",
-    notes: "",
-    pilotId: "",
-    secondPilotId: "",
-    takeoffTime: "",
+    departureTime: "",
     landingTime: "",
-    returnDepartureTime: "",
+    hours: "",
+    miles: "",
     dayTakeoffs: "1",
     dayLandings: "1",
     nightTakeoffs: "0",
     nightLandings: "0",
     pilotInstrumentApproaches: "0",
     secondPilotInstrumentApproaches: "0",
-    passengerIds: [],
   };
+}
+
+function emptyValue(): TripFormValue {
+  return {
+    id: "",
+    isSimulator: false,
+    routeLabel: "",
+    purpose: "",
+    notes: "",
+    pilotId: "",
+    secondPilotId: "",
+    passengerIds: [],
+    legs: [emptyLeg()],
+  };
+}
+
+function toDecimalHourString(hhmm: string): string | undefined {
+  if (!hhmm) return undefined;
+  const decimal = hhmmToDecimalHour(hhmm);
+  return decimal !== null ? formatDecimalHour(decimal) : undefined;
+}
+
+function applyComputedHours(leg: TripLegFormValue): TripLegFormValue {
+  const to = leg.departureTime ? hhmmToDecimalHour(leg.departureTime) : null;
+  const ld = leg.landingTime ? hhmmToDecimalHour(leg.landingTime) : null;
+  if (to !== null && ld !== null) {
+    return { ...leg, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
+  }
+  return leg;
 }
 
 interface TripFormProps {
@@ -106,28 +136,34 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   }, [open, initial]);
 
   const isEditing = !!value.id;
-  const isPlanned = isEditing && (!value.hours || parseFloat(value.hours) === 0);
 
   const pilotName = pilots.find((p) => p.id === value.pilotId)?.name;
   const secondPilotName = pilots.find((p) => p.id === value.secondPilotId)?.name;
 
-  // Cycles is derived from takeoffs, not separately entered — a trip can have
-  // any number of takeoffs/landings (e.g. multiple touch-and-goes in training).
-  const takeoffSum = parseInt(value.dayTakeoffs || "0", 10) + parseInt(value.nightTakeoffs || "0", 10);
-  const landingSum = parseInt(value.dayLandings || "0", 10) + parseInt(value.nightLandings || "0", 10);
-  const takeoffLandingMismatch = takeoffSum !== landingSum;
+  const legTotals = value.legs.map((leg) => ({
+    takeoffSum: parseInt(leg.dayTakeoffs || "0", 10) + parseInt(leg.nightTakeoffs || "0", 10),
+    landingSum: parseInt(leg.dayLandings || "0", 10) + parseInt(leg.nightLandings || "0", 10),
+  }));
+  const mismatchedLegIndex = legTotals.findIndex((t) => t.takeoffSum !== t.landingSum);
 
-  const takeoffDecimal = value.takeoffTime ? hhmmToDecimalHour(value.takeoffTime) : null;
-  const landingDecimal = value.landingTime ? hhmmToDecimalHour(value.landingTime) : null;
-  const hoursAutoComputed = takeoffDecimal !== null && landingDecimal !== null;
+  const totalHours = value.legs.reduce((s, l) => s + (parseFloat(l.hours) || 0), 0);
+  const totalCycles = legTotals.reduce((s, t) => s + t.takeoffSum, 0);
+  const totalMiles = value.legs.reduce((s, l) => s + (parseInt(l.miles, 10) || 0), 0);
+  const isPlanned = isEditing && totalHours === 0;
 
-  function applyComputedHours(v: TripFormValue): TripFormValue {
-    const to = v.takeoffTime ? hhmmToDecimalHour(v.takeoffTime) : null;
-    const ld = v.landingTime ? hhmmToDecimalHour(v.landingTime) : null;
-    if (to !== null && ld !== null) {
-      return { ...v, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
-    }
-    return v;
+  function updateLeg(index: number, patch: Partial<TripLegFormValue> | ((leg: TripLegFormValue) => TripLegFormValue)) {
+    setValue((v) => ({
+      ...v,
+      legs: v.legs.map((leg, i) => (i === index ? (typeof patch === "function" ? patch(leg) : { ...leg, ...patch }) : leg)),
+    }));
+  }
+
+  function addLeg() {
+    setValue((v) => ({ ...v, legs: [...v.legs, emptyLeg(v.legs[v.legs.length - 1])] }));
+  }
+
+  function removeLeg(index: number) {
+    setValue((v) => ({ ...v, legs: v.legs.filter((_, i) => i !== index) }));
   }
 
   async function handleCreatePassenger(name: string) {
@@ -140,47 +176,42 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
     setValue((v) => ({ ...v, passengerIds: [...v.passengerIds, result.id] }));
   }
 
-  // Converts a "HH:MM" field value to the decimal-hour string the server
-  // action expects (e.g. "14:18" -> "14.3"), or undefined when empty.
-  function toDecimalHourString(hhmm: string): string | undefined {
-    if (!hhmm) return undefined;
-    const decimal = hhmmToDecimalHour(hhmm);
-    return decimal !== null ? formatDecimalHour(decimal) : undefined;
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (takeoffLandingMismatch) {
-      setError("Total takeoffs and total landings must match.");
+    if (mismatchedLegIndex !== -1) {
+      setError(
+        value.legs.length === 1
+          ? "Total takeoffs and total landings must match."
+          : `Total takeoffs and total landings must match on leg ${mismatchedLegIndex + 1}.`
+      );
       return;
     }
     setSaving(true);
     const result = await saveTrip({
       id: value.id || undefined,
-      date: value.date,
-      endDate: value.endDate || undefined,
       isSimulator: value.isSimulator,
-      departureAirport: value.departureAirport,
-      arrivalAirport: value.arrivalAirport,
       routeLabel: value.routeLabel,
-      hours: value.hours,
-      cycles: String(takeoffSum),
-      miles: value.isSimulator ? "0" : value.miles,
       purpose: value.purpose,
       notes: value.notes,
       pilotId: value.pilotId,
       secondPilotId: value.secondPilotId,
-      takeoffTime: toDecimalHourString(value.takeoffTime),
-      landingTime: toDecimalHourString(value.landingTime),
-      returnDepartureTime: value.endDate ? toDecimalHourString(value.returnDepartureTime) : undefined,
-      dayTakeoffs: value.dayTakeoffs,
-      dayLandings: value.dayLandings,
-      nightTakeoffs: value.nightTakeoffs,
-      nightLandings: value.nightLandings,
-      pilotInstrumentApproaches: value.pilotInstrumentApproaches,
-      secondPilotInstrumentApproaches: value.secondPilotInstrumentApproaches,
       passengerIds: value.passengerIds,
+      legs: value.legs.map((leg) => ({
+        date: leg.date,
+        departureAirport: leg.departureAirport,
+        arrivalAirport: leg.arrivalAirport,
+        departureTime: toDecimalHourString(leg.departureTime),
+        landingTime: toDecimalHourString(leg.landingTime),
+        hours: leg.hours || "0",
+        miles: value.isSimulator ? "0" : leg.miles || "0",
+        dayTakeoffs: leg.dayTakeoffs,
+        dayLandings: leg.dayLandings,
+        nightTakeoffs: leg.nightTakeoffs,
+        nightLandings: leg.nightLandings,
+        pilotInstrumentApproaches: leg.pilotInstrumentApproaches,
+        secondPilotInstrumentApproaches: leg.secondPilotInstrumentApproaches,
+      })),
     });
     setSaving(false);
     if (!result.ok) {
@@ -209,7 +240,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       title={isEditing ? "Edit trip" : "Add trip"}
       description={
         isEditing
-          ? `${formatDate(value.date)}${isPlanned ? " · Planned — add hours to mark as flown" : ""}`
+          ? `${formatDate(value.legs[0]?.date ? new Date(value.legs[0].date) : new Date())}${isPlanned ? " · Planned — add hours to mark as flown" : ""}`
           : undefined
       }
       footer={
@@ -235,21 +266,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       }
     >
       <form id="trip-form" onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-date">Date</Label>
-            <DateInput id="tr-date" value={value.date} onChange={(e) => setValue((v) => ({ ...v, date: e.target.value }))} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-end-date">End date (optional)</Label>
-            <DateInput
-              id="tr-end-date"
-              value={value.endDate}
-              onChange={(e) => setValue((v) => ({ ...v, endDate: e.target.value, returnDepartureTime: e.target.value ? v.returnDepartureTime : "" }))}
-            />
-          </div>
-        </div>
-
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <Label htmlFor="tr-simulator">Simulator session</Label>
@@ -261,77 +277,237 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
           <Switch
             id="tr-simulator"
             checked={value.isSimulator}
-            onCheckedChange={(isSimulator) => setValue((v) => ({ ...v, isSimulator, miles: isSimulator ? "0" : v.miles }))}
+            onCheckedChange={(isSimulator) => setValue((v) => ({ ...v, isSimulator }))}
           />
         </div>
 
-        <div className="rounded-md border p-3">
-          <div className="mb-2 text-xs font-medium text-muted-foreground">Flight times (shown on the Schedule)</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-takeoff-time" className="text-xs font-normal">
-                Departure time
-              </Label>
-              <TimeInput
-                id="tr-takeoff-time"
-                value={value.takeoffTime}
-                onChange={(e) => setValue((v) => applyComputedHours({ ...v, takeoffTime: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-landing-time" className="text-xs font-normal">
-                Landing time
-              </Label>
-              <TimeInput
-                id="tr-landing-time"
-                value={value.landingTime}
-                onChange={(e) => setValue((v) => applyComputedHours({ ...v, landingTime: e.target.value }))}
-              />
-            </div>
-          </div>
-          {value.endDate && (
-            <div className="mt-3 space-y-1.5">
-              <Label htmlFor="tr-return-departure" className="text-xs font-normal">
-                Return departure time (optional)
-              </Label>
-              <TimeInput
-                id="tr-return-departure"
-                value={value.returnDepartureTime}
-                onChange={(e) => setValue((v) => ({ ...v, returnDepartureTime: e.target.value }))}
-                className="max-w-[calc(50%-0.5rem)]"
-              />
-              <p className="text-xs text-muted-foreground">Shown on the Schedule for the end date only.</p>
-            </div>
-          )}
-          {hoursAutoComputed && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Duty day will default to {decimalHourToHHMM(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
-              {decimalHourToHHMM(((landingDecimal ?? 0) + 0.5) % 24)} UTC for each pilot on this trip (editable on the Duty Days page).
-            </p>
-          )}
+        <div className="space-y-3">
+          {value.legs.map((leg, index) => {
+            const takeoffDecimal = leg.departureTime ? hhmmToDecimalHour(leg.departureTime) : null;
+            const landingDecimal = leg.landingTime ? hhmmToDecimalHour(leg.landingTime) : null;
+            const hoursAutoComputed = takeoffDecimal !== null && landingDecimal !== null;
+            const { takeoffSum, landingSum } = legTotals[index];
+            const mismatch = takeoffSum !== landingSum;
+
+            return (
+              <div key={leg.key} className="space-y-3 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {value.legs.length > 1 ? `Leg ${index + 1}` : "Flight details"}
+                  </div>
+                  {value.legs.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-destructive hover:text-destructive" onClick={() => removeLeg(index)}>
+                      <Trash2 className="size-3.5" /> Remove leg
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor={`tr-leg-date-${index}`} className="text-xs font-normal">
+                    Date
+                  </Label>
+                  <DateInput id={`tr-leg-date-${index}`} value={leg.date} onChange={(e) => updateLeg(index, { date: e.target.value })} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-dep-${index}`} className="text-xs font-normal">
+                      Departure
+                    </Label>
+                    <Input
+                      id={`tr-leg-dep-${index}`}
+                      value={leg.departureAirport}
+                      onChange={(e) => updateLeg(index, { departureAirport: e.target.value })}
+                      placeholder="Winnipeg, MB"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-arr-${index}`} className="text-xs font-normal">
+                      Arrival
+                    </Label>
+                    <Input
+                      id={`tr-leg-arr-${index}`}
+                      value={leg.arrivalAirport}
+                      onChange={(e) => updateLeg(index, { arrivalAirport: e.target.value })}
+                      placeholder="Palm Springs, CA"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-takeoff-${index}`} className="text-xs font-normal">
+                      Departure time
+                    </Label>
+                    <TimeInput
+                      id={`tr-leg-takeoff-${index}`}
+                      value={leg.departureTime}
+                      onChange={(e) => updateLeg(index, (l) => applyComputedHours({ ...l, departureTime: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-landing-${index}`} className="text-xs font-normal">
+                      Landing time
+                    </Label>
+                    <TimeInput
+                      id={`tr-leg-landing-${index}`}
+                      value={leg.landingTime}
+                      onChange={(e) => updateLeg(index, (l) => applyComputedHours({ ...l, landingTime: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                {hoursAutoComputed && (
+                  <p className="text-xs text-muted-foreground">
+                    Duty day will default to {decimalHourToHHMM(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
+                    {decimalHourToHHMM(((landingDecimal ?? 0) + 0.5) % 24)} UTC for each pilot on this trip (editable on the Duty Days page).
+                  </p>
+                )}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-hours-${index}`} className="text-xs font-normal">
+                      Hours{hoursAutoComputed && <span className="ml-1 text-muted-foreground">(auto)</span>}
+                    </Label>
+                    <Input
+                      id={`tr-leg-hours-${index}`}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={leg.hours}
+                      onChange={(e) => updateLeg(index, { hours: e.target.value })}
+                      readOnly={hoursAutoComputed}
+                      className={hoursAutoComputed ? "bg-secondary/50" : undefined}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-cycles-${index}`} className="text-xs font-normal">
+                      Cycles<span className="ml-1 text-muted-foreground">(auto)</span>
+                    </Label>
+                    <Input id={`tr-leg-cycles-${index}`} type="number" value={takeoffSum} readOnly className="bg-secondary/50" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`tr-leg-miles-${index}`} className="text-xs font-normal">
+                      Miles{value.isSimulator && <span className="ml-1 text-muted-foreground">(n/a)</span>}
+                    </Label>
+                    <Input
+                      id={`tr-leg-miles-${index}`}
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={value.isSimulator ? "0" : leg.miles}
+                      onChange={(e) => updateLeg(index, { miles: e.target.value })}
+                      disabled={value.isSimulator}
+                      className={value.isSimulator ? "bg-secondary/50" : undefined}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-xs font-medium text-muted-foreground">Takeoffs &amp; landings</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-day-to-${index}`} className="text-xs font-normal">
+                        Day takeoffs
+                      </Label>
+                      <Input
+                        id={`tr-leg-day-to-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.dayTakeoffs}
+                        onChange={(e) => updateLeg(index, { dayTakeoffs: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-night-to-${index}`} className="text-xs font-normal">
+                        Night takeoffs
+                      </Label>
+                      <Input
+                        id={`tr-leg-night-to-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.nightTakeoffs}
+                        onChange={(e) => updateLeg(index, { nightTakeoffs: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-day-ldg-${index}`} className="text-xs font-normal">
+                        Day landings
+                      </Label>
+                      <Input
+                        id={`tr-leg-day-ldg-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.dayLandings}
+                        onChange={(e) => updateLeg(index, { dayLandings: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-night-ldg-${index}`} className="text-xs font-normal">
+                        Night landings
+                      </Label>
+                      <Input
+                        id={`tr-leg-night-ldg-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.nightLandings}
+                        onChange={(e) => updateLeg(index, { nightLandings: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  {mismatch && (
+                    <p className="mt-2 text-xs text-destructive">
+                      Total takeoffs ({takeoffSum}) must equal total landings ({landingSum}).
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-2 text-xs font-medium text-muted-foreground">Instrument approaches</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-pic-ia-${index}`} className="text-xs font-normal">
+                        {pilotName ?? "Pilot in command"}
+                      </Label>
+                      <Input
+                        id={`tr-leg-pic-ia-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.pilotInstrumentApproaches}
+                        onChange={(e) => updateLeg(index, { pilotInstrumentApproaches: e.target.value })}
+                        disabled={!value.pilotId}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`tr-leg-sic-ia-${index}`} className="text-xs font-normal">
+                        {secondPilotName ?? "Second in command"}
+                      </Label>
+                      <Input
+                        id={`tr-leg-sic-ia-${index}`}
+                        type="number"
+                        min="0"
+                        value={leg.secondPilotInstrumentApproaches}
+                        onChange={(e) => updateLeg(index, { secondPilotInstrumentApproaches: e.target.value })}
+                        disabled={!value.secondPilotId}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <Button type="button" variant="outline" size="sm" onClick={addLeg}>
+            <Plus /> Add leg
+          </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-dep">Departure</Label>
-            <Input
-              id="tr-dep"
-              value={value.departureAirport}
-              onChange={(e) => setValue((v) => ({ ...v, departureAirport: e.target.value }))}
-              placeholder="Winnipeg, MB"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-arr">Arrival</Label>
-            <Input
-              id="tr-arr"
-              value={value.arrivalAirport}
-              onChange={(e) => setValue((v) => ({ ...v, arrivalAirport: e.target.value }))}
-              placeholder="Palm Springs, CA"
-              required
-            />
-          </div>
+        <div className="rounded-md border bg-secondary/30 p-3 text-xs text-muted-foreground">
+          Trip total: {formatDecimalHour(totalHours)} hrs · {totalCycles} cycles
+          {!value.isSimulator && <> · {totalMiles} mi</>}
         </div>
 
         <div className="space-y-1.5">
@@ -340,47 +516,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
             id="tr-route"
             value={value.routeLabel}
             onChange={(e) => setValue((v) => ({ ...v, routeLabel: e.target.value }))}
-            placeholder="Auto-filled from departure/arrival if left blank"
+            placeholder="Auto-filled from the legs if left blank"
           />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-hours">Hours{hoursAutoComputed && <span className="ml-1 font-normal text-muted-foreground">(auto)</span>}</Label>
-            <Input
-              id="tr-hours"
-              type="number"
-              step="0.1"
-              min="0"
-              value={value.hours}
-              onChange={(e) => setValue((v) => ({ ...v, hours: e.target.value }))}
-              readOnly={hoursAutoComputed}
-              className={hoursAutoComputed ? "bg-secondary/50" : undefined}
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-cycles">
-              Cycles<span className="ml-1 font-normal text-muted-foreground">(auto)</span>
-            </Label>
-            <Input id="tr-cycles" type="number" value={takeoffSum} readOnly className="bg-secondary/50" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-miles">
-              Miles{value.isSimulator && <span className="ml-1 font-normal text-muted-foreground">(n/a)</span>}
-            </Label>
-            <Input
-              id="tr-miles"
-              type="number"
-              step="1"
-              min="0"
-              value={value.isSimulator ? "0" : value.miles}
-              onChange={(e) => setValue((v) => ({ ...v, miles: e.target.value }))}
-              disabled={value.isSimulator}
-              className={value.isSimulator ? "bg-secondary/50" : undefined}
-              required
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -417,97 +554,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                   ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-
-        <div className="rounded-md border p-3">
-          <div className="mb-2 text-xs font-medium text-muted-foreground">Takeoffs &amp; landings</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-day-to" className="text-xs font-normal">
-                Day takeoffs
-              </Label>
-              <Input
-                id="tr-day-to"
-                type="number"
-                min="0"
-                value={value.dayTakeoffs}
-                onChange={(e) => setValue((v) => ({ ...v, dayTakeoffs: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-night-to" className="text-xs font-normal">
-                Night takeoffs
-              </Label>
-              <Input
-                id="tr-night-to"
-                type="number"
-                min="0"
-                value={value.nightTakeoffs}
-                onChange={(e) => setValue((v) => ({ ...v, nightTakeoffs: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-day-ldg" className="text-xs font-normal">
-                Day landings
-              </Label>
-              <Input
-                id="tr-day-ldg"
-                type="number"
-                min="0"
-                value={value.dayLandings}
-                onChange={(e) => setValue((v) => ({ ...v, dayLandings: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-night-ldg" className="text-xs font-normal">
-                Night landings
-              </Label>
-              <Input
-                id="tr-night-ldg"
-                type="number"
-                min="0"
-                value={value.nightLandings}
-                onChange={(e) => setValue((v) => ({ ...v, nightLandings: e.target.value }))}
-              />
-            </div>
-          </div>
-          {takeoffLandingMismatch && (
-            <p className="mt-2 text-xs text-destructive">
-              Total takeoffs ({takeoffSum}) must equal total landings ({landingSum}).
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-md border p-3">
-          <div className="mb-2 text-xs font-medium text-muted-foreground">Instrument approaches</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-pic-ia" className="text-xs font-normal">
-                {pilotName ?? "Pilot in command"}
-              </Label>
-              <Input
-                id="tr-pic-ia"
-                type="number"
-                min="0"
-                value={value.pilotInstrumentApproaches}
-                onChange={(e) => setValue((v) => ({ ...v, pilotInstrumentApproaches: e.target.value }))}
-                disabled={!value.pilotId}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-sic-ia" className="text-xs font-normal">
-                {secondPilotName ?? "Second in command"}
-              </Label>
-              <Input
-                id="tr-sic-ia"
-                type="number"
-                min="0"
-                value={value.secondPilotInstrumentApproaches}
-                onChange={(e) => setValue((v) => ({ ...v, secondPilotInstrumentApproaches: e.target.value }))}
-                disabled={!value.secondPilotId}
-              />
-            </div>
           </div>
         </div>
 

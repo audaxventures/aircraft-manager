@@ -15,6 +15,7 @@ import type { ComboboxOption } from "@/components/shared/multi-combobox";
 import { formatDate, formatNumber } from "@/lib/format";
 import { decimalHourToHHMM } from "@/lib/flight-time";
 import type { TripDto, TripExportPresetDto } from "@/lib/trips";
+import type { TripLegFormValue } from "@/components/trips/trip-form";
 
 interface TripsViewProps {
   trips: TripDto[];
@@ -41,31 +42,32 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
   }
 
   function openEdit(trip: TripDto) {
+    const legs: TripLegFormValue[] = trip.legs.map((leg, i) => ({
+      key: `${trip.id}-leg-${i}`,
+      date: leg.date.toISOString().slice(0, 10),
+      departureAirport: leg.departureAirport,
+      arrivalAirport: leg.arrivalAirport,
+      departureTime: leg.departureTime !== null ? decimalHourToHHMM(leg.departureTime) : "",
+      landingTime: leg.landingTime !== null ? decimalHourToHHMM(leg.landingTime) : "",
+      hours: String(leg.hours),
+      miles: String(leg.miles),
+      dayTakeoffs: String(leg.dayTakeoffs),
+      dayLandings: String(leg.dayLandings),
+      nightTakeoffs: String(leg.nightTakeoffs),
+      nightLandings: String(leg.nightLandings),
+      pilotInstrumentApproaches: String(leg.pilotInstrumentApproaches),
+      secondPilotInstrumentApproaches: String(leg.secondPilotInstrumentApproaches),
+    }));
     setEditing({
       id: trip.id,
-      date: trip.date.toISOString().slice(0, 10),
-      endDate: trip.endDate ? trip.endDate.toISOString().slice(0, 10) : "",
       isSimulator: trip.isSimulator,
-      departureAirport: trip.departureAirport,
-      arrivalAirport: trip.arrivalAirport,
       routeLabel: trip.routeLabel ?? "",
-      hours: String(trip.hours),
-      cycles: String(trip.cycles),
-      miles: String(trip.miles),
       purpose: trip.purpose ?? "",
       notes: trip.notes ?? "",
       pilotId: trip.pilotId ?? "",
       secondPilotId: trip.secondPilotId ?? "",
-      takeoffTime: trip.takeoffTime !== null ? decimalHourToHHMM(trip.takeoffTime) : "",
-      landingTime: trip.landingTime !== null ? decimalHourToHHMM(trip.landingTime) : "",
-      returnDepartureTime: trip.returnDepartureTime !== null ? decimalHourToHHMM(trip.returnDepartureTime) : "",
-      dayTakeoffs: String(trip.dayTakeoffs),
-      dayLandings: String(trip.dayLandings),
-      nightTakeoffs: String(trip.nightTakeoffs),
-      nightLandings: String(trip.nightLandings),
-      pilotInstrumentApproaches: String(trip.pilotInstrumentApproaches),
-      secondPilotInstrumentApproaches: String(trip.secondPilotInstrumentApproaches),
       passengerIds: trip.passengers.map((p) => p.id),
+      legs,
     });
     setFormOpen(true);
   }

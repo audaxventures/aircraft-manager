@@ -15,7 +15,7 @@ export async function getRecentlyDeleted(): Promise<TrashItem[]> {
   const [trips, costs, dutyLogs, events, reports] = await Promise.all([
     prisma.trip.findMany({
       where: { archived: true },
-      include: { pilot: true },
+      include: { pilot: true, legs: { orderBy: { legOrder: "asc" }, take: 1 } },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.costEntry.findMany({
@@ -43,7 +43,7 @@ export async function getRecentlyDeleted(): Promise<TrashItem[]> {
     ...trips.map((t) => ({
       kind: "trip" as const,
       id: t.id,
-      title: t.routeLabel || `${t.departureAirport} - ${t.arrivalAirport}`,
+      title: t.routeLabel || (t.legs[0] ? `${t.legs[0].departureAirport} - ${t.legs[0].arrivalAirport}` : "Trip"),
       subtitle: `Trip · ${t.pilot?.name ?? "No pilot"} · ${t.date.toISOString().slice(0, 10)}`,
       deletedAt: t.updatedAt,
     })),

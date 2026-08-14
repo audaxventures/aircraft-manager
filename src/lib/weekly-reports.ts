@@ -102,7 +102,7 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
       where: { archived: false, date: { gt: reportDate } },
       orderBy: { date: "asc" },
       take: 3,
-      select: { arrivalAirport: true, date: true },
+      select: { date: true, legs: { orderBy: { legOrder: "desc" }, take: 1, select: { arrivalAirport: true } } },
     }),
   ]);
 
@@ -122,7 +122,7 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
     priorFyLabel: `${formatDate(priorFyStart)} - ${formatDate(new Date(fyStart.getTime() - 1))}`,
     priorFyHours: toNumber(priorFy._sum.hours),
     priorFyCycles: priorFy._sum.cycles ?? 0,
-    upcomingTrips: upcoming.map((t) => ({ label: t.arrivalAirport, date: t.date })),
+    upcomingTrips: upcoming.map((t) => ({ label: t.legs[0]?.arrivalAirport ?? "", date: t.date })),
   };
 }
 

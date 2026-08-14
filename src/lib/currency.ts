@@ -68,32 +68,34 @@ export async function getPilotCurrency(pilotId: string, thresholds: CurrencyThre
   const pilot = await prisma.pilot.findUnique({ where: { id: pilotId } });
   if (!pilot) return null;
 
-  const trips = await prisma.trip.findMany({
-    where: { archived: false, OR: [{ pilotId }, { secondPilotId: pilotId }] },
+  const legs = await prisma.tripLeg.findMany({
+    where: { trip: { archived: false, OR: [{ pilotId }, { secondPilotId: pilotId }] } },
     select: {
       id: true,
       date: true,
-      routeLabel: true,
+      departureAirport: true,
+      arrivalAirport: true,
       dayTakeoffs: true,
       dayLandings: true,
       nightTakeoffs: true,
       nightLandings: true,
-      pilotId: true,
       pilotInstrumentApproaches: true,
       secondPilotInstrumentApproaches: true,
+      trip: { select: { pilotId: true } },
     },
     orderBy: { date: "desc" },
   });
+  const legRoute = (l: { departureAirport: string; arrivalAirport: string }) => `${l.departureAirport} → ${l.arrivalAirport}`;
 
-  const dayTakeoffEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.dayTakeoffs + t.nightTakeoffs }));
-  const dayLandingEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.dayLandings + t.nightLandings }));
-  const nightTakeoffEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.nightTakeoffs }));
-  const nightLandingEvents = trips.map((t) => ({ tripId: t.id, date: t.date, routeLabel: t.routeLabel, count: t.nightLandings }));
-  const instrumentApproachEvents = trips.map((t) => ({
-    tripId: t.id,
-    date: t.date,
-    routeLabel: t.routeLabel,
-    count: t.pilotId === pilotId ? t.pilotInstrumentApproaches : t.secondPilotInstrumentApproaches,
+  const dayTakeoffEvents = legs.map((l) => ({ tripId: l.id, date: l.date, routeLabel: legRoute(l), count: l.dayTakeoffs + l.nightTakeoffs }));
+  const dayLandingEvents = legs.map((l) => ({ tripId: l.id, date: l.date, routeLabel: legRoute(l), count: l.dayLandings + l.nightLandings }));
+  const nightTakeoffEvents = legs.map((l) => ({ tripId: l.id, date: l.date, routeLabel: legRoute(l), count: l.nightTakeoffs }));
+  const nightLandingEvents = legs.map((l) => ({ tripId: l.id, date: l.date, routeLabel: legRoute(l), count: l.nightLandings }));
+  const instrumentApproachEvents = legs.map((l) => ({
+    tripId: l.id,
+    date: l.date,
+    routeLabel: legRoute(l),
+    count: l.trip.pilotId === pilotId ? l.pilotInstrumentApproaches : l.secondPilotInstrumentApproaches,
   }));
 
   const dayTakeoffs = computeFromEvents(dayTakeoffEvents, thresholds.dayTakeoffsRequired, thresholds.periodMonths, asOf);

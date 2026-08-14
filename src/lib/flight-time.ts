@@ -56,3 +56,17 @@ export function hhmmToDecimalHour(value: string): number | null {
   const rawHour = parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
   return Math.round(rawHour * 10) / 10;
 }
+
+/**
+ * Decimal hour -> 12-hour clock with AM/PM, e.g. 14.3 -> "2:18 PM". Matches
+ * how the browser renders the trip form's <input type="time"> fields, so the
+ * Schedule (web and PDF) reads the same way as the time entered on a trip.
+ */
+export function decimalHourTo12Hour(value: number): string {
+  const totalMinutes = Math.round(value * 60);
+  const hh24 = Math.floor(totalMinutes / 60) % 24;
+  const mm = totalMinutes % 60;
+  const period = hh24 < 12 ? "AM" : "PM";
+  const hh12 = hh24 % 12 === 0 ? 12 : hh24 % 12;
+  return `${hh12}:${String(mm).padStart(2, "0")} ${period}`;
+}

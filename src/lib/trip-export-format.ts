@@ -1,6 +1,18 @@
 import { formatDate } from "@/lib/format";
-import { formatDecimalHour } from "@/lib/flight-time";
+import { decimalHourTo12Hour } from "@/lib/flight-time";
 import type { TripDto } from "@/lib/trips";
+
+/** One clause per leg, e.g. "CYWG→KPSP (Aug 5, Dep 2:18 PM, 4.2 hrs); KPSP→CYWG (Aug 9)". */
+function legsSummary(trip: TripDto): string {
+  return trip.legs
+    .map((leg) => {
+      const parts = [formatDate(leg.date)];
+      if (leg.departureTime !== null) parts.push(`Dep ${decimalHourTo12Hour(leg.departureTime)}`);
+      if (leg.hours > 0) parts.push(`${leg.hours} hrs`);
+      return `${leg.departureAirport}→${leg.arrivalAirport} (${parts.join(", ")})`;
+    })
+    .join("; ");
+}
 
 export function getTripColumnValue(trip: TripDto, key: string): string {
   switch (key) {
@@ -22,24 +34,12 @@ export function getTripColumnValue(trip: TripDto, key: string): string {
       return String(trip.cycles);
     case "miles":
       return String(trip.miles);
-    case "takeoffTime":
-      return trip.takeoffTime !== null ? formatDecimalHour(trip.takeoffTime) : "";
-    case "landingTime":
-      return trip.landingTime !== null ? formatDecimalHour(trip.landingTime) : "";
-    case "returnDepartureTime":
-      return trip.returnDepartureTime !== null ? formatDecimalHour(trip.returnDepartureTime) : "";
+    case "legs":
+      return legsSummary(trip);
     case "pilotName":
       return trip.pilotName ?? "";
     case "secondPilotName":
       return trip.secondPilotName ?? "";
-    case "dayTakeoffs":
-      return String(trip.dayTakeoffs);
-    case "nightTakeoffs":
-      return String(trip.nightTakeoffs);
-    case "dayLandings":
-      return String(trip.dayLandings);
-    case "nightLandings":
-      return String(trip.nightLandings);
     case "passengers":
       return trip.passengers.map((p) => p.name).join("; ");
     case "purpose":

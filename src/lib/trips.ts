@@ -18,12 +18,33 @@ export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
   };
 }
 
+export interface TripLegDto {
+  id: string;
+  legOrder: number;
+  date: Date;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTime: number | null;
+  landingTime: number | null;
+  hours: number;
+  cycles: number;
+  miles: number;
+  dayTakeoffs: number;
+  dayLandings: number;
+  nightTakeoffs: number;
+  nightLandings: number;
+  pilotInstrumentApproaches: number;
+  secondPilotInstrumentApproaches: number;
+}
+
 export interface TripDto {
   id: string;
   status: "PLANNED" | "COMPLETED";
   date: Date;
   endDate: Date | null;
   isSimulator: boolean;
+  // Convenience fields derived from the first/last leg, for places that just
+  // need "where the trip starts/ends" without walking the full itinerary.
   departureAirport: string;
   arrivalAirport: string;
   routeLabel: string | null;
@@ -36,16 +57,46 @@ export interface TripDto {
   pilotName: string | null;
   secondPilotId: string | null;
   secondPilotName: string | null;
-  takeoffTime: number | null;
-  landingTime: number | null;
-  returnDepartureTime: number | null;
+  legs: TripLegDto[];
+  passengers: { id: string; name: string }[];
+}
+
+function toLegDto(l: {
+  id: string;
+  legOrder: number;
+  date: Date;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTime: unknown;
+  landingTime: unknown;
+  hours: unknown;
+  cycles: number;
+  miles: number;
   dayTakeoffs: number;
   dayLandings: number;
   nightTakeoffs: number;
   nightLandings: number;
   pilotInstrumentApproaches: number;
   secondPilotInstrumentApproaches: number;
-  passengers: { id: string; name: string }[];
+}): TripLegDto {
+  return {
+    id: l.id,
+    legOrder: l.legOrder,
+    date: l.date,
+    departureAirport: l.departureAirport,
+    arrivalAirport: l.arrivalAirport,
+    departureTime: l.departureTime !== null ? toNumber(l.departureTime) : null,
+    landingTime: l.landingTime !== null ? toNumber(l.landingTime) : null,
+    hours: toNumber(l.hours),
+    cycles: l.cycles,
+    miles: l.miles,
+    dayTakeoffs: l.dayTakeoffs,
+    dayLandings: l.dayLandings,
+    nightTakeoffs: l.nightTakeoffs,
+    nightLandings: l.nightLandings,
+    pilotInstrumentApproaches: l.pilotInstrumentApproaches,
+    secondPilotInstrumentApproaches: l.secondPilotInstrumentApproaches,
+  };
 }
 
 export interface TripFilters {
@@ -70,8 +121,8 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
           ? [
               {
                 OR: [
-                  { departureAirport: { contains: filters.search, mode: "insensitive" as const } },
-                  { arrivalAirport: { contains: filters.search, mode: "insensitive" as const } },
+                  { legs: { some: { departureAirport: { contains: filters.search, mode: "insensitive" as const } } } },
+                  { legs: { some: { arrivalAirport: { contains: filters.search, mode: "insensitive" as const } } } },
                   { routeLabel: { contains: filters.search, mode: "insensitive" as const } },
                   { purpose: { contains: filters.search, mode: "insensitive" as const } },
                 ],
@@ -84,39 +135,37 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
       pilot: true,
       secondPilot: true,
       passengers: { include: { passenger: true } },
+      legs: { orderBy: { legOrder: "asc" } },
     },
     orderBy: { date: "desc" },
   });
 
-  return trips.map((t) => ({
-    id: t.id,
-    status: t.status,
-    date: t.date,
-    endDate: t.endDate,
-    isSimulator: t.isSimulator,
-    departureAirport: t.departureAirport,
-    arrivalAirport: t.arrivalAirport,
-    routeLabel: t.routeLabel,
-    hours: toNumber(t.hours),
-    cycles: t.cycles,
-    miles: t.miles,
-    purpose: t.purpose,
-    notes: t.notes,
-    pilotId: t.pilotId,
-    pilotName: t.pilot?.name ?? null,
-    secondPilotId: t.secondPilotId,
-    secondPilotName: t.secondPilot?.name ?? null,
-    takeoffTime: t.takeoffTime !== null ? toNumber(t.takeoffTime) : null,
-    landingTime: t.landingTime !== null ? toNumber(t.landingTime) : null,
-    returnDepartureTime: t.returnDepartureTime !== null ? toNumber(t.returnDepartureTime) : null,
-    dayTakeoffs: t.dayTakeoffs,
-    dayLandings: t.dayLandings,
-    nightTakeoffs: t.nightTakeoffs,
-    nightLandings: t.nightLandings,
-    pilotInstrumentApproaches: t.pilotInstrumentApproaches,
-    secondPilotInstrumentApproaches: t.secondPilotInstrumentApproaches,
-    passengers: t.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
-  }));
+  return trips.map((t) => {
+    const legs = t.legs.map(toLegDto);
+    const first = legs[0];
+    const last = legs[legs.length - 1];
+    return {
+      id: t.id,
+      status: t.status,
+      date: t.date,
+      endDate: t.endDate,
+      isSimulator: t.isSimulator,
+      departureAirport: first?.departureAirport ?? "",
+      arrivalAirport: last?.arrivalAirport ?? "",
+      routeLabel: t.routeLabel,
+      hours: toNumber(t.hours),
+      cycles: t.cycles,
+      miles: t.miles,
+      purpose: t.purpose,
+      notes: t.notes,
+      pilotId: t.pilotId,
+      pilotName: t.pilot?.name ?? null,
+      secondPilotId: t.secondPilotId,
+      secondPilotName: t.secondPilot?.name ?? null,
+      legs,
+      passengers: t.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
+    };
+  });
 }
 
 export interface TripExportPresetDto {
@@ -146,7 +195,7 @@ export async function getPassengerHistory(passengerId: string): Promise<Passenge
     include: {
       trips: {
         where: { trip: { archived: false } },
-        include: { trip: true },
+        include: { trip: { include: { legs: { orderBy: { legOrder: "asc" } } } } },
         orderBy: { trip: { date: "desc" } },
       },
     },
@@ -156,12 +205,15 @@ export async function getPassengerHistory(passengerId: string): Promise<Passenge
   return {
     passengerId: passenger.id,
     passengerName: passenger.name,
-    trips: passenger.trips.map((tp) => ({
-      id: tp.trip.id,
-      date: tp.trip.date,
-      routeLabel: tp.trip.routeLabel,
-      departureAirport: tp.trip.departureAirport,
-      arrivalAirport: tp.trip.arrivalAirport,
-    })),
+    trips: passenger.trips.map((tp) => {
+      const legs = tp.trip.legs;
+      return {
+        id: tp.trip.id,
+        date: tp.trip.date,
+        routeLabel: tp.trip.routeLabel,
+        departureAirport: legs[0]?.departureAirport ?? "",
+        arrivalAirport: legs[legs.length - 1]?.arrivalAirport ?? "",
+      };
+    }),
   };
 }

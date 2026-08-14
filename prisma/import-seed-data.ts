@@ -120,21 +120,33 @@ async function importTrips() {
     // easy to correct manually for any flights that were actually at night.
     if (cycles > 0) dayDefaultedCount++;
 
+    const departureAirport = row.Departure || row.Route?.split(" - ")[0] || "Unknown";
+    const arrivalAirport = row.Arrival || row.Route?.split(" - ")[1] || "Unknown";
+    const tripHours = Number.isFinite(hours) ? hours : 0;
     const trip = await prisma.trip.create({
       data: {
         date,
-        departureAirport: row.Departure || row.Route?.split(" - ")[0] || "Unknown",
-        arrivalAirport: row.Arrival || row.Route?.split(" - ")[1] || "Unknown",
         routeLabel: row.Route || null,
-        hours: Number.isFinite(hours) ? hours : 0,
+        hours: tripHours,
         cycles,
         miles,
         purpose: row.Purpose || null,
         notes: row.Notes || null,
-        dayTakeoffs: cycles,
-        dayLandings: cycles,
-        nightTakeoffs: 0,
-        nightLandings: 0,
+        legs: {
+          create: {
+            legOrder: 0,
+            date,
+            departureAirport,
+            arrivalAirport,
+            hours: tripHours,
+            cycles,
+            miles,
+            dayTakeoffs: cycles,
+            dayLandings: cycles,
+            nightTakeoffs: 0,
+            nightLandings: 0,
+          },
+        },
       },
     });
     tripCount++;
