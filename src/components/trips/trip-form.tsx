@@ -375,11 +375,11 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                       type="number"
                       step="0.1"
                       min="0"
+                      placeholder="Unknown until flown"
                       value={leg.hours}
                       onChange={(e) => updateLeg(index, { hours: e.target.value })}
                       readOnly={hoursAutoComputed}
                       className={hoursAutoComputed ? "bg-secondary/50" : undefined}
-                      required
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -397,11 +397,11 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                       type="number"
                       step="1"
                       min="0"
+                      placeholder={value.isSimulator ? undefined : "Unknown until flown"}
                       value={value.isSimulator ? "0" : leg.miles}
                       onChange={(e) => updateLeg(index, { miles: e.target.value })}
                       disabled={value.isSimulator}
                       className={value.isSimulator ? "bg-secondary/50" : undefined}
-                      required
                     />
                   </div>
                 </div>
