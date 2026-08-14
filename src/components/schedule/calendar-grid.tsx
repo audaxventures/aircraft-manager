@@ -6,7 +6,7 @@ import { PlaneTakeoff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import { formatDecimalHour } from "@/lib/flight-time";
+import { decimalHourToHHMM } from "@/lib/flight-time";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { CalendarItemDto } from "@/lib/schedule";
 
@@ -20,10 +20,10 @@ function toKey(d: Date) {
 function labelForDay(item: CalendarItemDto, day: Date): string {
   const dayKey = toKey(day);
   if (dayKey === toKey(item.startDate) && item.departureTime !== null) {
-    return `${item.title} · Dep ${formatDecimalHour(item.departureTime)}`;
+    return `${item.title} · Dep ${decimalHourToHHMM(item.departureTime)}`;
   }
   if (dayKey === toKey(item.endDate) && dayKey !== toKey(item.startDate) && item.returnTime !== null) {
-    return `${item.title} · Ret ${formatDecimalHour(item.returnTime)}`;
+    return `${item.title} · Ret ${decimalHourToHHMM(item.returnTime)}`;
   }
   return item.title;
 }

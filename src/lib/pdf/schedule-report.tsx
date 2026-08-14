@@ -1,7 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 import { pdfStyles as s } from "@/lib/pdf/styles";
-import { formatDecimalHour } from "@/lib/flight-time";
+import { decimalHourToHHMM } from "@/lib/flight-time";
 import type { CalendarItemDto } from "@/lib/schedule";
 
 const MONTH_LABELS = [
@@ -60,10 +60,10 @@ function toKey(d: Date) {
 function labelForDay(item: CalendarItemDto, day: Date): string {
   const dayKey = toKey(day);
   if (dayKey === toKey(item.startDate) && item.departureTime !== null) {
-    return `${item.title} · Dep ${formatDecimalHour(item.departureTime)}`;
+    return `${item.title} · Dep ${decimalHourToHHMM(item.departureTime)}`;
   }
   if (dayKey === toKey(item.endDate) && dayKey !== toKey(item.startDate) && item.returnTime !== null) {
-    return `${item.title} · Ret ${formatDecimalHour(item.returnTime)}`;
+    return `${item.title} · Ret ${decimalHourToHHMM(item.returnTime)}`;
   }
   return item.title;
 }

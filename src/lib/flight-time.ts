@@ -37,3 +37,22 @@ export function dateToDecimalHour(date: Date): number {
   const rawHour = date.getUTCHours() + date.getUTCMinutes() / 60;
   return roundUpToSixMinutes(rawHour);
 }
+
+/** Decimal hour -> "HH:MM" for a standard <input type="time">, e.g. 14.3 -> "14:18". */
+export function decimalHourToHHMM(value: number): string {
+  const totalMinutes = Math.round(value * 60);
+  const hh = Math.floor(totalMinutes / 60) % 24;
+  const mm = totalMinutes % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+/**
+ * "HH:MM" from a standard <input type="time"> -> decimal hour, rounded to the
+ * nearest 6-minute increment (the grid the Decimal(4,1) column can store).
+ */
+export function hhmmToDecimalHour(value: string): number | null {
+  const match = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/.exec(value.trim());
+  if (!match) return null;
+  const rawHour = parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
+  return Math.round(rawHour * 10) / 10;
+}

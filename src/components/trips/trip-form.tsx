@@ -10,13 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
+import { TimeInput } from "@/components/ui/time-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { MultiCombobox, type ComboboxOption } from "@/components/shared/multi-combobox";
 import { saveTrip, deleteTrip, createPassenger } from "@/lib/actions/trips";
 import { formatDate } from "@/lib/format";
-import { parseDecimalHour, decimalHoursBetween, formatDecimalHour } from "@/lib/flight-time";
+import { decimalHoursBetween, formatDecimalHour, decimalHourToHHMM, hhmmToDecimalHour } from "@/lib/flight-time";
 
 export interface PilotOption {
   id: string;
@@ -116,16 +117,13 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
   const landingSum = parseInt(value.dayLandings || "0", 10) + parseInt(value.nightLandings || "0", 10);
   const takeoffLandingMismatch = takeoffSum !== landingSum;
 
-  const takeoffDecimal = value.takeoffTime ? parseDecimalHour(value.takeoffTime) : null;
-  const landingDecimal = value.landingTime ? parseDecimalHour(value.landingTime) : null;
-  const takeoffInvalid = value.takeoffTime !== "" && takeoffDecimal === null;
-  const landingInvalid = value.landingTime !== "" && landingDecimal === null;
+  const takeoffDecimal = value.takeoffTime ? hhmmToDecimalHour(value.takeoffTime) : null;
+  const landingDecimal = value.landingTime ? hhmmToDecimalHour(value.landingTime) : null;
   const hoursAutoComputed = takeoffDecimal !== null && landingDecimal !== null;
-  const returnDepartureInvalid = value.returnDepartureTime !== "" && parseDecimalHour(value.returnDepartureTime) === null;
 
   function applyComputedHours(v: TripFormValue): TripFormValue {
-    const to = v.takeoffTime ? parseDecimalHour(v.takeoffTime) : null;
-    const ld = v.landingTime ? parseDecimalHour(v.landingTime) : null;
+    const to = v.takeoffTime ? hhmmToDecimalHour(v.takeoffTime) : null;
+    const ld = v.landingTime ? hhmmToDecimalHour(v.landingTime) : null;
     if (to !== null && ld !== null) {
       return { ...v, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
     }
@@ -142,15 +140,19 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
     setValue((v) => ({ ...v, passengerIds: [...v.passengerIds, result.id] }));
   }
 
+  // Converts a "HH:MM" field value to the decimal-hour string the server
+  // action expects (e.g. "14:18" -> "14.3"), or undefined when empty.
+  function toDecimalHourString(hhmm: string): string | undefined {
+    if (!hhmm) return undefined;
+    const decimal = hhmmToDecimalHour(hhmm);
+    return decimal !== null ? formatDecimalHour(decimal) : undefined;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (takeoffLandingMismatch) {
       setError("Total takeoffs and total landings must match.");
-      return;
-    }
-    if (takeoffInvalid || landingInvalid || returnDepartureInvalid) {
-      setError("Takeoff/landing/return departure times must be in UTC decimal format, e.g. 14.3 for 14:18.");
       return;
     }
     setSaving(true);
@@ -169,9 +171,9 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       notes: value.notes,
       pilotId: value.pilotId,
       secondPilotId: value.secondPilotId,
-      takeoffTime: value.takeoffTime || undefined,
-      landingTime: value.landingTime || undefined,
-      returnDepartureTime: value.endDate ? value.returnDepartureTime || undefined : undefined,
+      takeoffTime: toDecimalHourString(value.takeoffTime),
+      landingTime: toDecimalHourString(value.landingTime),
+      returnDepartureTime: value.endDate ? toDecimalHourString(value.returnDepartureTime) : undefined,
       dayTakeoffs: value.dayTakeoffs,
       dayLandings: value.dayLandings,
       nightTakeoffs: value.nightTakeoffs,
@@ -248,19 +250,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
           </div>
         </div>
 
-        {value.endDate && (
-          <div className="space-y-1.5">
-            <Label htmlFor="tr-return-departure">Return departure time (optional)</Label>
-            <Input
-              id="tr-return-departure"
-              value={value.returnDepartureTime}
-              onChange={(e) => setValue((v) => ({ ...v, returnDepartureTime: e.target.value }))}
-              placeholder="e.g. 14.3 — shown on the Schedule for the end date"
-            />
-            {returnDepartureInvalid && <p className="text-xs text-destructive">Format: HH.T, e.g. 14.3 for 14:18</p>}
-          </div>
-        )}
-
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <Label htmlFor="tr-simulator">Simulator session</Label>
@@ -274,6 +263,52 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
             checked={value.isSimulator}
             onCheckedChange={(isSimulator) => setValue((v) => ({ ...v, isSimulator, miles: isSimulator ? "0" : v.miles }))}
           />
+        </div>
+
+        <div className="rounded-md border p-3">
+          <div className="mb-2 text-xs font-medium text-muted-foreground">Flight times (shown on the Schedule)</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-takeoff-time" className="text-xs font-normal">
+                Departure time
+              </Label>
+              <TimeInput
+                id="tr-takeoff-time"
+                value={value.takeoffTime}
+                onChange={(e) => setValue((v) => applyComputedHours({ ...v, takeoffTime: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tr-landing-time" className="text-xs font-normal">
+                Landing time
+              </Label>
+              <TimeInput
+                id="tr-landing-time"
+                value={value.landingTime}
+                onChange={(e) => setValue((v) => applyComputedHours({ ...v, landingTime: e.target.value }))}
+              />
+            </div>
+          </div>
+          {value.endDate && (
+            <div className="mt-3 space-y-1.5">
+              <Label htmlFor="tr-return-departure" className="text-xs font-normal">
+                Return departure time (optional)
+              </Label>
+              <TimeInput
+                id="tr-return-departure"
+                value={value.returnDepartureTime}
+                onChange={(e) => setValue((v) => ({ ...v, returnDepartureTime: e.target.value }))}
+                className="max-w-[calc(50%-0.5rem)]"
+              />
+              <p className="text-xs text-muted-foreground">Shown on the Schedule for the end date only.</p>
+            </div>
+          )}
+          {hoursAutoComputed && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Duty day will default to {decimalHourToHHMM(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
+              {decimalHourToHHMM(((landingDecimal ?? 0) + 0.5) % 24)} UTC for each pilot on this trip (editable on the Duty Days page).
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -387,38 +422,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
 
         <div className="rounded-md border p-3">
           <div className="mb-2 text-xs font-medium text-muted-foreground">Takeoffs &amp; landings</div>
-          <div className="mb-3 grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-takeoff-time" className="text-xs font-normal">
-                Departure time (UTC decimal)
-              </Label>
-              <Input
-                id="tr-takeoff-time"
-                value={value.takeoffTime}
-                onChange={(e) => setValue((v) => applyComputedHours({ ...v, takeoffTime: e.target.value }))}
-                placeholder="e.g. 14.3"
-              />
-              {takeoffInvalid && <p className="text-xs text-destructive">Format: HH.T, e.g. 14.3 for 14:18</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tr-landing-time" className="text-xs font-normal">
-                Landing time (UTC decimal)
-              </Label>
-              <Input
-                id="tr-landing-time"
-                value={value.landingTime}
-                onChange={(e) => setValue((v) => applyComputedHours({ ...v, landingTime: e.target.value }))}
-                placeholder="e.g. 16.5"
-              />
-              {landingInvalid && <p className="text-xs text-destructive">Format: HH.T, e.g. 16.5 for 16:30</p>}
-            </div>
-          </div>
-          {hoursAutoComputed && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              Duty day will default to {formatDecimalHour(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
-              {formatDecimalHour(((landingDecimal ?? 0) + 0.5) % 24)} UTC for each pilot on this trip (editable on the Duty Days page).
-            </p>
-          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="tr-day-to" className="text-xs font-normal">

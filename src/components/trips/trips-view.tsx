@@ -13,7 +13,7 @@ import { TripForm, type PilotOption, type TripFormValue } from "@/components/tri
 import { TripExportPanel } from "@/components/trips/trip-export-panel";
 import type { ComboboxOption } from "@/components/shared/multi-combobox";
 import { formatDate, formatNumber } from "@/lib/format";
-import { formatDecimalHour } from "@/lib/flight-time";
+import { decimalHourToHHMM } from "@/lib/flight-time";
 import type { TripDto, TripExportPresetDto } from "@/lib/trips";
 
 interface TripsViewProps {
@@ -56,9 +56,9 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
       notes: trip.notes ?? "",
       pilotId: trip.pilotId ?? "",
       secondPilotId: trip.secondPilotId ?? "",
-      takeoffTime: trip.takeoffTime !== null ? formatDecimalHour(trip.takeoffTime) : "",
-      landingTime: trip.landingTime !== null ? formatDecimalHour(trip.landingTime) : "",
-      returnDepartureTime: trip.returnDepartureTime !== null ? formatDecimalHour(trip.returnDepartureTime) : "",
+      takeoffTime: trip.takeoffTime !== null ? decimalHourToHHMM(trip.takeoffTime) : "",
+      landingTime: trip.landingTime !== null ? decimalHourToHHMM(trip.landingTime) : "",
+      returnDepartureTime: trip.returnDepartureTime !== null ? decimalHourToHHMM(trip.returnDepartureTime) : "",
       dayTakeoffs: String(trip.dayTakeoffs),
       dayLandings: String(trip.dayLandings),
       nightTakeoffs: String(trip.nightTakeoffs),
