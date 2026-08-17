@@ -39,6 +39,7 @@ export interface TripLegFormValue {
   nightLandings: string;
   pilotInstrumentApproaches: string;
   secondPilotInstrumentApproaches: string;
+  passengerIds: string[];
 }
 
 export interface TripFormValue {
@@ -49,7 +50,6 @@ export interface TripFormValue {
   notes: string;
   pilotId: string;
   secondPilotId: string;
-  passengerIds: string[];
   legs: TripLegFormValue[];
 }
 
@@ -65,7 +65,9 @@ function emptyLeg(previous?: TripLegFormValue): TripLegFormValue {
     date: previous?.date ?? new Date().toISOString().slice(0, 10),
     // Continuation default: a new leg usually departs from wherever the
     // previous one arrived, which also happens to give a return leg the
-    // "flipped" route the user expects without any special-casing.
+    // "flipped" route the user expects without any special-casing. Passengers
+    // carry over too, since the same people are usually still aboard --
+    // editable per leg for drop-offs/pickups.
     departureAirport: previous?.arrivalAirport ?? "",
     arrivalAirport: "",
     departureTime: "",
@@ -78,6 +80,7 @@ function emptyLeg(previous?: TripLegFormValue): TripLegFormValue {
     nightLandings: "0",
     pilotInstrumentApproaches: "0",
     secondPilotInstrumentApproaches: "0",
+    passengerIds: previous?.passengerIds ?? [],
   };
 }
 
@@ -90,7 +93,6 @@ function emptyValue(): TripFormValue {
     notes: "",
     pilotId: "",
     secondPilotId: "",
-    passengerIds: [],
     legs: [emptyLeg()],
   };
 }
@@ -166,14 +168,14 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
     setValue((v) => ({ ...v, legs: v.legs.filter((_, i) => i !== index) }));
   }
 
-  async function handleCreatePassenger(name: string) {
+  async function handleCreatePassenger(legIndex: number, name: string) {
     const result = await createPassenger(name);
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
     setPassengerOptions((opts) => [...opts, { value: result.id, label: result.name }]);
-    setValue((v) => ({ ...v, passengerIds: [...v.passengerIds, result.id] }));
+    updateLeg(legIndex, (leg) => ({ ...leg, passengerIds: [...leg.passengerIds, result.id] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -196,7 +198,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
       notes: value.notes,
       pilotId: value.pilotId,
       secondPilotId: value.secondPilotId,
-      passengerIds: value.passengerIds,
       legs: value.legs.map((leg) => ({
         date: leg.date,
         departureAirport: leg.departureAirport,
@@ -211,6 +212,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
         nightLandings: leg.nightLandings,
         pilotInstrumentApproaches: leg.pilotInstrumentApproaches,
         secondPilotInstrumentApproaches: leg.secondPilotInstrumentApproaches,
+        passengerIds: leg.passengerIds,
       })),
     });
     setSaving(false);
@@ -496,6 +498,17 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                     </div>
                   </div>
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label>Passengers</Label>
+                  <MultiCombobox
+                    options={passengerOptions}
+                    value={leg.passengerIds}
+                    onChange={(passengerIds) => updateLeg(index, { passengerIds })}
+                    onCreate={(name) => handleCreatePassenger(index, name)}
+                    placeholder="Add passenger"
+                  />
+                </div>
               </div>
             );
           })}
@@ -555,17 +568,6 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Passengers</Label>
-          <MultiCombobox
-            options={passengerOptions}
-            value={value.passengerIds}
-            onChange={(passengerIds) => setValue((v) => ({ ...v, passengerIds }))}
-            onCreate={handleCreatePassenger}
-            placeholder="Add passenger"
-          />
         </div>
 
         <div className="space-y-1.5">

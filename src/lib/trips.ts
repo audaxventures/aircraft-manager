@@ -35,6 +35,7 @@ export interface TripLegDto {
   nightLandings: number;
   pilotInstrumentApproaches: number;
   secondPilotInstrumentApproaches: number;
+  passengers: { id: string; name: string }[];
 }
 
 export interface TripDto {
@@ -58,6 +59,8 @@ export interface TripDto {
   secondPilotId: string | null;
   secondPilotName: string | null;
   legs: TripLegDto[];
+  // Union of every leg's passengers (deduped) -- who's aboard can change leg
+  // to leg, so this is only a summary for views that show one row per trip.
   passengers: { id: string; name: string }[];
 }
 
@@ -78,6 +81,7 @@ function toLegDto(l: {
   nightLandings: number;
   pilotInstrumentApproaches: number;
   secondPilotInstrumentApproaches: number;
+  passengers: { passenger: { id: string; name: string } }[];
 }): TripLegDto {
   return {
     id: l.id,
@@ -96,7 +100,15 @@ function toLegDto(l: {
     nightLandings: l.nightLandings,
     pilotInstrumentApproaches: l.pilotInstrumentApproaches,
     secondPilotInstrumentApproaches: l.secondPilotInstrumentApproaches,
+    passengers: l.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
   };
+}
+
+/** Deduped union of passengers across every leg, in first-seen order. */
+function unionPassengers(legs: TripLegDto[]): { id: string; name: string }[] {
+  const seen = new Map<string, string>();
+  for (const leg of legs) for (const p of leg.passengers) seen.set(p.id, p.name);
+  return Array.from(seen, ([id, name]) => ({ id, name }));
 }
 
 export interface TripFilters {
@@ -114,7 +126,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
       ...(filters.from || filters.to
         ? { date: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lt: filters.to } : {}) } }
         : {}),
-      ...(filters.passengerId ? { passengers: { some: { passengerId: filters.passengerId } } } : {}),
+      ...(filters.passengerId ? { legs: { some: { passengers: { some: { passengerId: filters.passengerId } } } } } : {}),
       AND: [
         ...(filters.pilotId ? [{ OR: [{ pilotId: filters.pilotId }, { secondPilotId: filters.pilotId }] }] : []),
         ...(filters.search
@@ -134,8 +146,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
     include: {
       pilot: true,
       secondPilot: true,
-      passengers: { include: { passenger: true } },
-      legs: { orderBy: { legOrder: "asc" } },
+      legs: { orderBy: { legOrder: "asc" }, include: { passengers: { include: { passenger: true } } } },
     },
     orderBy: { date: "desc" },
   });
@@ -163,7 +174,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<TripDto[]> {
       secondPilotId: t.secondPilotId,
       secondPilotName: t.secondPilot?.name ?? null,
       legs,
-      passengers: t.passengers.map((p) => ({ id: p.passenger.id, name: p.passenger.name })),
+      passengers: unionPassengers(legs),
     };
   });
 }
@@ -186,17 +197,20 @@ export async function getPassengerOptions() {
 export interface PassengerHistoryEntry {
   passengerId: string;
   passengerName: string;
-  trips: { id: string; date: Date; routeLabel: string | null; departureAirport: string; arrivalAirport: string }[];
+  // One row per leg the passenger was actually aboard for, not per trip --
+  // a passenger who only flew one leg of a multi-leg trip shouldn't show up
+  // for legs they weren't on.
+  legs: { tripId: string; legId: string; date: Date; departureAirport: string; arrivalAirport: string }[];
 }
 
 export async function getPassengerHistory(passengerId: string): Promise<PassengerHistoryEntry | null> {
   const passenger = await prisma.passenger.findUnique({
     where: { id: passengerId },
     include: {
-      trips: {
-        where: { trip: { archived: false } },
-        include: { trip: { include: { legs: { orderBy: { legOrder: "asc" } } } } },
-        orderBy: { trip: { date: "desc" } },
+      legs: {
+        where: { tripLeg: { trip: { archived: false } } },
+        include: { tripLeg: true },
+        orderBy: { tripLeg: { date: "desc" } },
       },
     },
   });
@@ -205,15 +219,12 @@ export async function getPassengerHistory(passengerId: string): Promise<Passenge
   return {
     passengerId: passenger.id,
     passengerName: passenger.name,
-    trips: passenger.trips.map((tp) => {
-      const legs = tp.trip.legs;
-      return {
-        id: tp.trip.id,
-        date: tp.trip.date,
-        routeLabel: tp.trip.routeLabel,
-        departureAirport: legs[0]?.departureAirport ?? "",
-        arrivalAirport: legs[legs.length - 1]?.arrivalAirport ?? "",
-      };
-    }),
+    legs: passenger.legs.map((lp) => ({
+      tripId: lp.tripLeg.tripId,
+      legId: lp.tripLeg.id,
+      date: lp.tripLeg.date,
+      departureAirport: lp.tripLeg.departureAirport,
+      arrivalAirport: lp.tripLeg.arrivalAirport,
+    })),
   };
 }

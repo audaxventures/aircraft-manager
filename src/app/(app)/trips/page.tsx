@@ -84,17 +84,17 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
         <div className="space-y-5">
           <PassengerPicker options={passengerOptions} />
           {passengerHistory ? (
-            passengerHistory.trips.length > 0 ? (
+            passengerHistory.legs.length > 0 ? (
               <div className="rounded-lg border bg-card">
                 <div className="border-b px-4 py-2.5 text-sm font-medium">
-                  {passengerHistory.passengerName} · {passengerHistory.trips.length} trip
-                  {passengerHistory.trips.length === 1 ? "" : "s"}
+                  {passengerHistory.passengerName} · {passengerHistory.legs.length} leg
+                  {passengerHistory.legs.length === 1 ? "" : "s"}
                 </div>
                 <ul className="divide-y">
-                  {passengerHistory.trips.map((t) => (
-                    <li key={t.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                      <span className="text-muted-foreground">{formatDate(t.date)}</span>
-                      <span>{t.routeLabel || `${t.departureAirport} - ${t.arrivalAirport}`}</span>
+                  {passengerHistory.legs.map((l) => (
+                    <li key={l.legId} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                      <span className="text-muted-foreground">{formatDate(l.date)}</span>
+                      <span>{`${l.departureAirport} - ${l.arrivalAirport}`}</span>
                     </li>
                   ))}
                 </ul>

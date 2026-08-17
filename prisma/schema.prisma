@@ -37,21 +37,21 @@ model User {
 // A single aircraft record today, but modeled as a table (not hardcoded)
 // so a second tail number could be added later without a schema rebuild.
 model Aircraft {
-  id                String   @id @default(cuid())
-  tailNumber        String   @unique
-  type              String
-  baseAirport       String
-  fiscalYearStartMonth Int   @default(1) // 1-12
+  id                   String   @id @default(cuid())
+  tailNumber           String   @unique
+  type                 String
+  baseAirport          String
+  fiscalYearStartMonth Int      @default(1) // 1-12
   // Reference facts used on the Weekly Status Report letterhead and to
   // compute lifetime totals (this app only knows hours/cycles logged since
   // trips started being tracked here, so purchase totals anchor the running count).
-  serialNumber      String?
-  ownerOperator     String?
-  programManager    String?
-  purchaseTotalHours  Decimal @default(0) @db.Decimal(8, 1)
-  purchaseTotalCycles Int     @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  serialNumber         String?
+  ownerOperator        String?
+  programManager       String?
+  purchaseTotalHours   Decimal  @default(0) @db.Decimal(8, 1)
+  purchaseTotalCycles  Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 enum CostType {
@@ -65,14 +65,14 @@ enum Currency {
 }
 
 model CostCategory {
-  id         String     @id @default(cuid())
-  name       String     @unique
-  type       CostType
-  sortOrder  Int        @default(0)
-  archived   Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  entries    CostEntry[]
+  id        String      @id @default(cuid())
+  name      String      @unique
+  type      CostType
+  sortOrder Int         @default(0)
+  archived  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   CostEntry[]
 }
 
 model Vendor {
@@ -108,22 +108,22 @@ model CostEntry {
 }
 
 model Pilot {
-  id            String          @id @default(cuid())
-  name          String          @unique
-  archived      Boolean         @default(false)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  trips         Trip[]          @relation("TripPilotInCommand")
-  secondPilotTrips Trip[]       @relation("TripSecondInCommand")
-  dutyDayLogs   DutyDayLog[]
-  calendarEvents CalendarEvent[]
+  id               String          @id @default(cuid())
+  name             String          @unique
+  archived         Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  trips            Trip[]          @relation("TripPilotInCommand")
+  secondPilotTrips Trip[]          @relation("TripSecondInCommand")
+  dutyDayLogs      DutyDayLog[]
+  calendarEvents   CalendarEvent[]
 }
 
 model Passenger {
-  id        String          @id @default(cuid())
-  name      String          @unique
-  createdAt DateTime        @default(now())
-  trips     TripPassenger[]
+  id        String             @id @default(cuid())
+  name      String             @unique
+  createdAt DateTime           @default(now())
+  legs      TripLegPassenger[]
 }
 
 enum TripStatus {
@@ -132,44 +132,44 @@ enum TripStatus {
 }
 
 // A trip is a container for one or more legs (see TripLeg). Pilot(s),
-// purpose, notes, passengers, and the simulator flag apply to the whole
-// trip; date/endDate/hours/cycles/miles/routeLabel are denormalized
+// purpose, notes, and the simulator flag apply to the whole trip; passengers
+// are tracked per leg (see TripLegPassenger), since who's aboard can change
+// at a stop; date/endDate/hours/cycles/miles/routeLabel are denormalized
 // aggregates recomputed from the trip's legs every time they're saved, so
 // existing date-range queries and hours/cost calculations that only need
 // the trip level keep working without joining TripLeg.
 model Trip {
-  id                String          @id @default(cuid())
-  status            TripStatus      @default(COMPLETED)
+  id            String       @id @default(cuid())
+  status        TripStatus   @default(COMPLETED)
   // Aggregates: date = earliest leg date, endDate = latest leg date (null
   // when there's only one leg), hours/cycles/miles = sum across legs.
-  date              DateTime
-  endDate           DateTime?
-  hours             Decimal         @default(0) @db.Decimal(6, 2)
-  cycles            Int             @default(0)
-  miles             Int             @default(0)
+  date          DateTime
+  endDate       DateTime?
+  hours         Decimal      @default(0) @db.Decimal(6, 2)
+  cycles        Int          @default(0)
+  miles         Int          @default(0)
   // Optional override for the trip-level summary label (Trips list, exports).
   // Falls back to "first leg departure - last leg arrival" when blank.
-  routeLabel        String?
-  purpose           String?
-  notes             String?
-  pilotId           String?
-  pilot             Pilot?          @relation("TripPilotInCommand", fields: [pilotId], references: [id], onDelete: SetNull)
-  secondPilotId     String?
-  secondPilot       Pilot?          @relation("TripSecondInCommand", fields: [secondPilotId], references: [id], onDelete: SetNull)
-  legs              TripLeg[]
-  passengers        TripPassenger[]
-  attachments       Attachment[]
+  routeLabel    String?
+  purpose       String?
+  notes         String?
+  pilotId       String?
+  pilot         Pilot?       @relation("TripPilotInCommand", fields: [pilotId], references: [id], onDelete: SetNull)
+  secondPilotId String?
+  secondPilot   Pilot?       @relation("TripSecondInCommand", fields: [secondPilotId], references: [id], onDelete: SetNull)
+  legs          TripLeg[]
+  attachments   Attachment[]
   // Simulator training session rather than a real flight. Still counts
   // toward pilot currency and duty-day/rolling flight-hour tracking, but its
   // hours/cycles/miles are excluded from aircraft-utilization aggregates
   // (Weekly Report lifetime hours, cost-per-hour/mile, monthly hours grid)
   // since no airframe time or fuel is actually consumed.
-  isSimulator       Boolean         @default(false)
+  isSimulator   Boolean      @default(false)
   // Soft-deleted: kept for recovery via Settings > Recently deleted instead
   // of being permanently removed from the database.
-  archived          Boolean         @default(false)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  archived      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([date])
   @@index([pilotId])
@@ -183,44 +183,48 @@ model Trip {
 // route on the right day instead of repeating the whole trip label across
 // every day it spans.
 model TripLeg {
-  id                String   @id @default(cuid())
-  tripId            String
-  trip              Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  legOrder          Int
-  date              DateTime
-  departureAirport  String
-  arrivalAirport    String
+  id                              String             @id @default(cuid())
+  tripId                          String
+  trip                            Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  legOrder                        Int
+  date                            DateTime
+  departureAirport                String
+  arrivalAirport                  String
   // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded to the nearest 6 minutes.
-  departureTime     Decimal? @db.Decimal(4, 1)
-  landingTime       Decimal? @db.Decimal(4, 1)
-  hours             Decimal  @default(0) @db.Decimal(6, 2)
+  departureTime                   Decimal?           @db.Decimal(4, 1)
+  landingTime                     Decimal?           @db.Decimal(4, 1)
+  hours                           Decimal            @default(0) @db.Decimal(6, 2)
   // Derived from takeoffs, not separately entered (a leg can have any number
   // of takeoffs/landings, e.g. touch-and-goes in training).
-  cycles            Int      @default(0)
-  miles             Int      @default(0)
-  dayTakeoffs       Int      @default(0)
-  dayLandings       Int      @default(0)
-  nightTakeoffs     Int      @default(0)
-  nightLandings     Int      @default(0)
+  cycles                          Int                @default(0)
+  miles                           Int                @default(0)
+  dayTakeoffs                     Int                @default(0)
+  dayLandings                     Int                @default(0)
+  nightTakeoffs                   Int                @default(0)
+  nightLandings                   Int                @default(0)
   // Instrument approaches conducted by each pilot on this leg, toward CAR
   // 401.05(2) instrument-approach recency (tracked per pilot, not per leg
   // in isolation -- summed across legs for currency).
-  pilotInstrumentApproaches       Int @default(0)
-  secondPilotInstrumentApproaches Int @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  pilotInstrumentApproaches       Int                @default(0)
+  secondPilotInstrumentApproaches Int                @default(0)
+  passengers                      TripLegPassenger[]
+  createdAt                       DateTime           @default(now())
+  updatedAt                       DateTime           @updatedAt
 
   @@index([tripId])
   @@index([date])
 }
 
-model TripPassenger {
-  tripId      String
-  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+// Which passengers were aboard a specific leg -- who's on the plane can
+// change at a stop (dropped off, picked up), so this is tracked per leg
+// rather than once for the whole trip.
+model TripLegPassenger {
+  tripLegId   String
+  tripLeg     TripLeg   @relation(fields: [tripLegId], references: [id], onDelete: Cascade)
   passengerId String
   passenger   Passenger @relation(fields: [passengerId], references: [id], onDelete: Cascade)
 
-  @@id([tripId, passengerId])
+  @@id([tripLegId, passengerId])
   @@index([passengerId])
 }
 
@@ -230,32 +234,32 @@ enum DutyLogType {
 }
 
 model DutyDayLog {
-  id                      String      @id @default(cuid())
-  pilotId                 String
-  pilot                   Pilot       @relation(fields: [pilotId], references: [id], onDelete: Cascade)
-  date                    DateTime
-  dutyType                DutyLogType @default(FLIGHT)
-  reportTime              DateTime
-  dutyEndTime             DateTime
-  restPeriodBeforeHours   Decimal     @db.Decimal(6, 2)
-  splitDutyApplied        Boolean     @default(false)
-  splitDutyNote           String?
+  id                             String      @id @default(cuid())
+  pilotId                        String
+  pilot                          Pilot       @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+  date                           DateTime
+  dutyType                       DutyLogType @default(FLIGHT)
+  reportTime                     DateTime
+  dutyEndTime                    DateTime
+  restPeriodBeforeHours          Decimal     @db.Decimal(6, 2)
+  splitDutyApplied               Boolean     @default(false)
+  splitDutyNote                  String?
   // CARS 604.102 unforeseen operational circumstances extension (mutually
   // exclusive with split-duty). Digitally "signed" by typing the PIC's name;
   // signedAt is set server-side the first time a name is recorded.
-  unforeseenCircumstancesApplied Boolean  @default(false)
+  unforeseenCircumstancesApplied Boolean     @default(false)
   unforeseenCircumstancesNote    String?
   unforeseenSignedByName         String?
   unforeseenSignedAt             DateTime?
-  notes                   String?
+  notes                          String?
   // Soft-deleted: kept for recovery via Settings > Recently deleted instead
   // of being permanently removed from the database.
-  archived                Boolean     @default(false)
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  archived                       Boolean     @default(false)
+  createdAt                      DateTime    @default(now())
+  updatedAt                      DateTime    @updatedAt
 
-  @@index([pilotId, date])
   @@unique([pilotId, date, dutyType])
+  @@index([pilotId, date])
 }
 
 model Attachment {
@@ -344,34 +348,34 @@ model WeeklyReport {
 // Singleton row holding the configurable CARS 604 / CAR 401.05(2) thresholds,
 // so regulatory figures aren't hardcoded and can be updated if rules change.
 model RegulatorySettings {
-  id                            String   @id @default(cuid())
+  id                               String   @id @default(cuid())
   // CARS 604 duty day limits
-  maxFlightDutyHours            Decimal  @default(14) @db.Decimal(4, 2)
-  extendedMaxFlightDutyHours    Decimal  @default(15) @db.Decimal(4, 2)
-  rolling30DayFlightHoursLimit  Decimal  @default(70) @db.Decimal(5, 2)
-  extensionRestPeriodHours      Decimal  @default(24) @db.Decimal(4, 2)
-  minRestPeriodHours            Decimal  @default(36) @db.Decimal(4, 2)
-  restPeriodWindowDays          Int      @default(7)
-  splitDutyMaxExtensionHours    Decimal  @default(4) @db.Decimal(4, 2)
-  splitDutyMinRestHours         Decimal  @default(4) @db.Decimal(4, 2)
+  maxFlightDutyHours               Decimal  @default(14) @db.Decimal(4, 2)
+  extendedMaxFlightDutyHours       Decimal  @default(15) @db.Decimal(4, 2)
+  rolling30DayFlightHoursLimit     Decimal  @default(70) @db.Decimal(5, 2)
+  extensionRestPeriodHours         Decimal  @default(24) @db.Decimal(4, 2)
+  minRestPeriodHours               Decimal  @default(36) @db.Decimal(4, 2)
+  restPeriodWindowDays             Int      @default(7)
+  splitDutyMaxExtensionHours       Decimal  @default(4) @db.Decimal(4, 2)
+  splitDutyMinRestHours            Decimal  @default(4) @db.Decimal(4, 2)
   // CARS 604.102 unforeseen operational circumstances extension
-  unforeseenMaxExtensionHours   Decimal  @default(3) @db.Decimal(4, 2)
-  unforeseenMaxDutyHours        Decimal  @default(18) @db.Decimal(4, 2)
+  unforeseenMaxExtensionHours      Decimal  @default(3) @db.Decimal(4, 2)
+  unforeseenMaxDutyHours           Decimal  @default(18) @db.Decimal(4, 2)
   // CAR 401.05(2) recency — day and night takeoffs/landings tracked against
   // separate required counts (both share the same rolling period).
-  currencyDayTakeoffsRequired   Int      @default(5)
-  currencyDayLandingsRequired   Int      @default(5)
-  currencyNightTakeoffsRequired Int      @default(5)
-  currencyNightLandingsRequired Int      @default(5)
-  currencyPeriodMonths          Int      @default(6)
+  currencyDayTakeoffsRequired      Int      @default(5)
+  currencyDayLandingsRequired      Int      @default(5)
+  currencyNightTakeoffsRequired    Int      @default(5)
+  currencyNightLandingsRequired    Int      @default(5)
+  currencyPeriodMonths             Int      @default(6)
   // CAR 401.05(2) instrument approach recency
-  instrumentApproachesRequired     Int   @default(6)
-  instrumentApproachesPeriodMonths Int   @default(6)
+  instrumentApproachesRequired     Int      @default(6)
+  instrumentApproachesPeriodMonths Int      @default(6)
   // Company/regulatory caps on rolling flight time per pilot, shown on the
   // Duty Days pilot cards (distinct from rolling30DayFlightHoursLimit above,
   // which only governs CARS 604 duty-day extension eligibility).
-  flightHours30DayLimit         Decimal  @default(120) @db.Decimal(6, 2)
-  flightHours90DayLimit         Decimal  @default(300) @db.Decimal(6, 2)
-  flightHours12MonthLimit       Decimal  @default(1200) @db.Decimal(6, 2)
-  updatedAt                     DateTime @updatedAt
+  flightHours30DayLimit            Decimal  @default(120) @db.Decimal(6, 2)
+  flightHours90DayLimit            Decimal  @default(300) @db.Decimal(6, 2)
+  flightHours12MonthLimit          Decimal  @default(1200) @db.Decimal(6, 2)
+  updatedAt                        DateTime @updatedAt
 }

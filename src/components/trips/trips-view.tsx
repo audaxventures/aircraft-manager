@@ -57,6 +57,7 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
       nightLandings: String(leg.nightLandings),
       pilotInstrumentApproaches: String(leg.pilotInstrumentApproaches),
       secondPilotInstrumentApproaches: String(leg.secondPilotInstrumentApproaches),
+      passengerIds: leg.passengers.map((p) => p.id),
     }));
     setEditing({
       id: trip.id,
@@ -66,7 +67,6 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
       notes: trip.notes ?? "",
       pilotId: trip.pilotId ?? "",
       secondPilotId: trip.secondPilotId ?? "",
-      passengerIds: trip.passengers.map((p) => p.id),
       legs,
     });
     setFormOpen(true);

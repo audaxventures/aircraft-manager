@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "crypto";
+
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
@@ -38,6 +40,7 @@ const legSchema = z
     nightLandings: z.coerce.number().int().nonnegative(),
     pilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
     secondPilotInstrumentApproaches: z.coerce.number().int().nonnegative().default(0),
+    passengerIds: z.array(z.string()).default([]),
   })
   .refine((d) => d.dayTakeoffs + d.nightTakeoffs === d.dayLandings + d.nightLandings, {
     message: "Total takeoffs must equal total landings on each leg",
@@ -53,7 +56,6 @@ const tripSchema = z
     notes: z.string().optional(),
     pilotId: z.string().optional(),
     secondPilotId: z.string().optional(),
-    passengerIds: z.array(z.string()).default([]),
     legs: z.array(legSchema).min(1, "At least one leg is required"),
   })
   .refine((d) => !d.pilotId || !d.secondPilotId || d.pilotId !== d.secondPilotId, {
@@ -71,7 +73,7 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
   const parsed = tripSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { id, routeLabel, purpose, notes, pilotId, secondPilotId, passengerIds, legs, isSimulator } = parsed.data;
+  const { id, routeLabel, purpose, notes, pilotId, secondPilotId, legs, isSimulator } = parsed.data;
 
   const legDates = legs.map((l) => l.date.getTime());
   const minDate = new Date(Math.min(...legDates));
@@ -99,35 +101,39 @@ export async function saveTrip(input: unknown): Promise<ActionResult> {
     let trip;
     if (id) {
       trip = await tx.trip.update({ where: { id }, data });
-      await tx.tripPassenger.deleteMany({ where: { tripId: id } });
+      // Cascades away that trip's TripLegPassenger rows along with the legs.
       await tx.tripLeg.deleteMany({ where: { tripId: id } });
     } else {
       trip = await tx.trip.create({ data });
     }
-    await tx.tripLeg.createMany({
-      data: legs.map((l, i) => ({
-        tripId: trip.id,
-        legOrder: i,
-        date: l.date,
-        departureAirport: l.departureAirport,
-        arrivalAirport: l.arrivalAirport,
-        departureTime: l.departureTime ?? null,
-        landingTime: l.landingTime ?? null,
-        hours: l.hours,
-        cycles: l.dayTakeoffs + l.nightTakeoffs,
-        miles: isSimulator ? 0 : l.miles,
-        dayTakeoffs: l.dayTakeoffs,
-        dayLandings: l.dayLandings,
-        nightTakeoffs: l.nightTakeoffs,
-        nightLandings: l.nightLandings,
-        pilotInstrumentApproaches: l.pilotInstrumentApproaches,
-        secondPilotInstrumentApproaches: l.secondPilotInstrumentApproaches,
-      })),
-    });
-    if (passengerIds.length > 0) {
-      await tx.tripPassenger.createMany({
-        data: passengerIds.map((passengerId) => ({ tripId: trip.id, passengerId })),
-      });
+    // IDs generated client-side (rather than left to the DB default) so the
+    // passenger junction rows below can reference them in the same batch.
+    const legRows = legs.map((l, i) => ({
+      id: randomUUID(),
+      tripId: trip.id,
+      legOrder: i,
+      date: l.date,
+      departureAirport: l.departureAirport,
+      arrivalAirport: l.arrivalAirport,
+      departureTime: l.departureTime ?? null,
+      landingTime: l.landingTime ?? null,
+      hours: l.hours,
+      cycles: l.dayTakeoffs + l.nightTakeoffs,
+      miles: isSimulator ? 0 : l.miles,
+      dayTakeoffs: l.dayTakeoffs,
+      dayLandings: l.dayLandings,
+      nightTakeoffs: l.nightTakeoffs,
+      nightLandings: l.nightLandings,
+      pilotInstrumentApproaches: l.pilotInstrumentApproaches,
+      secondPilotInstrumentApproaches: l.secondPilotInstrumentApproaches,
+    }));
+    await tx.tripLeg.createMany({ data: legRows });
+
+    const passengerRows = legs.flatMap((l, i) =>
+      l.passengerIds.map((passengerId) => ({ tripLegId: legRows[i].id, passengerId }))
+    );
+    if (passengerRows.length > 0) {
+      await tx.tripLegPassenger.createMany({ data: passengerRows });
     }
     return trip.id;
   });

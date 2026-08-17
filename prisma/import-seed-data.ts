@@ -2,7 +2,7 @@
  * One-time historical data migration for C-FPFX.
  *
  * Imports:
- *   - PFX-trips-2026.csv        -> Trip, Passenger, TripPassenger
+ *   - PFX-trips-2026.csv        -> Trip, TripLeg, Passenger, TripLegPassenger
  *   - seed_data/{vendor}.csv    -> CostEntry (itemized, per invoice)
  *   - seed_data/Summary.csv     -> CostEntry (Fixed categories, monthly aggregates —
  *                                  no itemized ledger exists for these in the source data)
@@ -148,8 +148,10 @@ async function importTrips() {
           },
         },
       },
+      include: { legs: true },
     });
     tripCount++;
+    const tripLegId = trip.legs[0].id;
 
     const passengerNames = (row.Passengers ?? "")
       .split(",")
@@ -167,7 +169,7 @@ async function importTrips() {
         passengerId = passenger.id;
         passengerCache.set(name, passengerId);
       }
-      await prisma.tripPassenger.create({ data: { tripId: trip.id, passengerId } });
+      await prisma.tripLegPassenger.create({ data: { tripLegId, passengerId } });
     }
   }
 
@@ -361,7 +363,7 @@ async function alreadyImported(): Promise<boolean> {
 }
 
 async function reset() {
-  await prisma.tripPassenger.deleteMany({});
+  // TripLeg and TripLegPassenger cascade away with their parent Trip.
   await prisma.trip.deleteMany({});
   await prisma.passenger.deleteMany({});
   await prisma.costEntry.deleteMany({});

@@ -40,8 +40,7 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
         include: {
           pilot: true,
           secondPilot: true,
-          passengers: { include: { passenger: true } },
-          legs: { orderBy: { legOrder: "asc" } },
+          legs: { orderBy: { legOrder: "asc" }, include: { passengers: { include: { passenger: true } } } },
         },
         orderBy: { date: "desc" },
       }),
@@ -184,6 +183,9 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
   ];
   boldHeader(tripSheet);
   for (const t of trips) {
+    // Deduped union across every leg -- who's aboard can change leg to leg
+    // (see the Trip Legs sheet below for the per-leg breakdown).
+    const passengerNames = [...new Set(t.legs.flatMap((l) => l.passengers.map((p) => p.passenger.name)))];
     tripSheet.addRow({
       date: isoDate(t.date),
       endDate: isoDate(t.endDate),
@@ -197,7 +199,7 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
       miles: t.miles,
       pilot: t.pilot?.name ?? "",
       secondPilot: t.secondPilot?.name ?? "",
-      passengers: t.passengers.map((p) => p.passenger.name).join("; "),
+      passengers: passengerNames.join("; "),
       purpose: t.purpose ?? "",
       notes: t.notes ?? "",
     });
@@ -222,6 +224,7 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
     { header: "Night Landings", key: "nightLandings", width: 10 },
     { header: "PIC Instrument Approaches", key: "picApproaches", width: 14 },
     { header: "SIC Instrument Approaches", key: "sicApproaches", width: 14 },
+    { header: "Passengers", key: "passengers", width: 28 },
   ];
   boldHeader(legSheet);
   for (const t of trips) {
@@ -243,6 +246,7 @@ export async function buildFullExportWorkbook(): Promise<ExcelJS.Workbook> {
         nightLandings: l.nightLandings,
         picApproaches: l.pilotInstrumentApproaches,
         sicApproaches: l.secondPilotInstrumentApproaches,
+        passengers: l.passengers.map((p) => p.passenger.name).join("; "),
       });
     }
   }
