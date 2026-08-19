@@ -10,14 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
-import { TimeInput } from "@/components/ui/time-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { MultiCombobox, type ComboboxOption } from "@/components/shared/multi-combobox";
 import { saveTrip, deleteTrip, createPassenger } from "@/lib/actions/trips";
 import { formatDate } from "@/lib/format";
-import { decimalHoursBetween, formatDecimalHour, decimalHourToHHMM, hhmmToDecimalHour } from "@/lib/flight-time";
+import { decimalHoursBetween, formatDecimalHour, decimalHourToHHMM, parseDecimalHour } from "@/lib/flight-time";
 
 export interface PilotOption {
   id: string;
@@ -97,15 +96,9 @@ function emptyValue(): TripFormValue {
   };
 }
 
-function toDecimalHourString(hhmm: string): string | undefined {
-  if (!hhmm) return undefined;
-  const decimal = hhmmToDecimalHour(hhmm);
-  return decimal !== null ? formatDecimalHour(decimal) : undefined;
-}
-
 function applyComputedHours(leg: TripLegFormValue): TripLegFormValue {
-  const to = leg.departureTime ? hhmmToDecimalHour(leg.departureTime) : null;
-  const ld = leg.landingTime ? hhmmToDecimalHour(leg.landingTime) : null;
+  const to = leg.departureTime ? parseDecimalHour(leg.departureTime) : null;
+  const ld = leg.landingTime ? parseDecimalHour(leg.landingTime) : null;
   if (to !== null && ld !== null) {
     return { ...leg, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
   }
@@ -202,8 +195,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
         date: leg.date,
         departureAirport: leg.departureAirport,
         arrivalAirport: leg.arrivalAirport,
-        departureTime: toDecimalHourString(leg.departureTime),
-        landingTime: toDecimalHourString(leg.landingTime),
+        departureTime: leg.departureTime,
+        landingTime: leg.landingTime,
         hours: leg.hours || "0",
         miles: value.isSimulator ? "0" : leg.miles || "0",
         dayTakeoffs: leg.dayTakeoffs,
@@ -285,8 +278,8 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
 
         <div className="space-y-3">
           {value.legs.map((leg, index) => {
-            const takeoffDecimal = leg.departureTime ? hhmmToDecimalHour(leg.departureTime) : null;
-            const landingDecimal = leg.landingTime ? hhmmToDecimalHour(leg.landingTime) : null;
+            const takeoffDecimal = leg.departureTime ? parseDecimalHour(leg.departureTime) : null;
+            const landingDecimal = leg.landingTime ? parseDecimalHour(leg.landingTime) : null;
             const hoursAutoComputed = takeoffDecimal !== null && landingDecimal !== null;
             const { takeoffSum, landingSum } = legTotals[index];
             const mismatch = takeoffSum !== landingSum;
@@ -341,25 +334,37 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor={`tr-leg-takeoff-${index}`} className="text-xs font-normal">
-                      Departure time
+                      Departure time (UTC decimal)
                     </Label>
-                    <TimeInput
+                    <Input
                       id={`tr-leg-takeoff-${index}`}
                       value={leg.departureTime}
                       onChange={(e) => updateLeg(index, (l) => applyComputedHours({ ...l, departureTime: e.target.value }))}
+                      placeholder="14.3"
+                      inputMode="decimal"
+                      className={leg.departureTime && takeoffDecimal === null ? "border-destructive" : undefined}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor={`tr-leg-landing-${index}`} className="text-xs font-normal">
-                      Landing time
+                      Landing time (UTC decimal)
                     </Label>
-                    <TimeInput
+                    <Input
                       id={`tr-leg-landing-${index}`}
                       value={leg.landingTime}
                       onChange={(e) => updateLeg(index, (l) => applyComputedHours({ ...l, landingTime: e.target.value }))}
+                      placeholder="18.5"
+                      inputMode="decimal"
+                      className={leg.landingTime && landingDecimal === null ? "border-destructive" : undefined}
                     />
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Each 0.1 is a 6-minute increment, e.g. 14.3 = 14:18Z.
+                  {((leg.departureTime && takeoffDecimal === null) || (leg.landingTime && landingDecimal === null)) && (
+                    <span className="text-destructive"> Use HH.T format, e.g. 14.3.</span>
+                  )}
+                </p>
                 {hoursAutoComputed && (
                   <p className="text-xs text-muted-foreground">
                     Duty day will default to {decimalHourToHHMM(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–
