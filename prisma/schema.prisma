@@ -191,8 +191,15 @@ model TripLeg {
   departureAirport                String
   arrivalAirport                  String
   // UTC decimal-hour time of day (e.g. 14.3 = 14:18), rounded to the nearest 6 minutes.
+  // Used for duty-day and currency calculations.
   departureTime                   Decimal?           @db.Decimal(4, 1)
   landingTime                     Decimal?           @db.Decimal(4, 1)
+  // Local departure time at the departure airport, same decimal-hour-of-day
+  // encoding as departureTime but NOT converted to/from UTC -- the app has no
+  // per-airport timezone data, so this is exactly what the user typed. Purely
+  // for display (Schedule web + PDF prefer this over departureTime when set);
+  // never used in duty-day or currency math.
+  localDepartureTime              Decimal?           @db.Decimal(4, 1)
   hours                           Decimal            @default(0) @db.Decimal(6, 2)
   // Derived from takeoffs, not separately entered (a leg can have any number
   // of takeoffs/landings, e.g. touch-and-goes in training).

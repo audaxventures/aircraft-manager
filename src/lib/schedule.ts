@@ -57,8 +57,16 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     for (let i = 0; i < legs.length; i++) {
       const leg = legs[i];
       const routeText = `${leg.departureAirport} → ${leg.arrivalAirport}`;
-      const departureTime = leg.departureTime !== null ? toNumber(leg.departureTime) : null;
-      const title = departureTime !== null ? `${routeText} · Dep ${decimalHourTo12Hour(departureTime)}` : routeText;
+      // The local departure time (as entered) is what shows here when set --
+      // it's what a passenger/staff reading the Schedule actually cares
+      // about, not the UTC time duty-day/currency math runs on.
+      const displayTime =
+        leg.localDepartureTime !== null
+          ? toNumber(leg.localDepartureTime)
+          : leg.departureTime !== null
+            ? toNumber(leg.departureTime)
+            : null;
+      const title = displayTime !== null ? `${routeText} · Dep ${decimalHourTo12Hour(displayTime)}` : routeText;
       const hours = toNumber(leg.hours);
 
       tripItems.push({

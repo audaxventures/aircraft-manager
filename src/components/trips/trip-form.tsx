@@ -10,13 +10,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
+import { TimeInput } from "@/components/ui/time-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOver } from "@/components/shared/slide-over";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { MultiCombobox, type ComboboxOption } from "@/components/shared/multi-combobox";
 import { saveTrip, deleteTrip, createPassenger } from "@/lib/actions/trips";
 import { formatDate } from "@/lib/format";
-import { decimalHoursBetween, formatDecimalHour, decimalHourToHHMM, parseDecimalHour } from "@/lib/flight-time";
+import {
+  decimalHoursBetween,
+  formatDecimalHour,
+  decimalHourToHHMM,
+  hhmmToDecimalHour,
+  parseDecimalHour,
+} from "@/lib/flight-time";
 
 export interface PilotOption {
   id: string;
@@ -30,6 +37,7 @@ export interface TripLegFormValue {
   arrivalAirport: string;
   departureTime: string;
   landingTime: string;
+  localDepartureTime: string;
   hours: string;
   miles: string;
   dayTakeoffs: string;
@@ -71,6 +79,7 @@ function emptyLeg(previous?: TripLegFormValue): TripLegFormValue {
     arrivalAirport: "",
     departureTime: "",
     landingTime: "",
+    localDepartureTime: "",
     hours: "",
     miles: "",
     dayTakeoffs: "1",
@@ -103,6 +112,13 @@ function applyComputedHours(leg: TripLegFormValue): TripLegFormValue {
     return { ...leg, hours: formatDecimalHour(decimalHoursBetween(to, ld)) };
   }
   return leg;
+}
+
+/** "HH:MM" from the local-time picker -> decimal-hour string for the server, e.g. "14:18" -> "14.3". */
+function toDecimalHourString(hhmm: string): string | undefined {
+  if (!hhmm) return undefined;
+  const decimal = hhmmToDecimalHour(hhmm);
+  return decimal !== null ? formatDecimalHour(decimal) : undefined;
 }
 
 interface TripFormProps {
@@ -197,6 +213,7 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
         arrivalAirport: leg.arrivalAirport,
         departureTime: leg.departureTime,
         landingTime: leg.landingTime,
+        localDepartureTime: toDecimalHourString(leg.localDepartureTime),
         hours: leg.hours || "0",
         miles: value.isSimulator ? "0" : leg.miles || "0",
         dayTakeoffs: leg.dayTakeoffs,
@@ -365,6 +382,21 @@ function TripForm({ open, onOpenChange, pilots, passengerOptions: initialPasseng
                     <span className="text-destructive"> Use HH.T format, e.g. 14.3.</span>
                   )}
                 </p>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor={`tr-leg-local-departure-${index}`} className="text-xs font-normal">
+                    Local departure time (optional)
+                  </Label>
+                  <TimeInput
+                    id={`tr-leg-local-departure-${index}`}
+                    value={leg.localDepartureTime}
+                    onChange={(e) => updateLeg(index, { localDepartureTime: e.target.value })}
+                    className="max-w-[calc(50%-0.5rem)]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shown on the Schedule instead of the UTC departure time above. The UTC times still drive duty-day and currency tracking.
+                  </p>
+                </div>
                 {hoursAutoComputed && (
                   <p className="text-xs text-muted-foreground">
                     Duty day will default to {decimalHourToHHMM(((takeoffDecimal ?? 0) - 1 + 24) % 24)}–

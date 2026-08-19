@@ -26,6 +26,7 @@ export interface TripLegDto {
   arrivalAirport: string;
   departureTime: number | null;
   landingTime: number | null;
+  localDepartureTime: number | null;
   hours: number;
   cycles: number;
   miles: number;
@@ -72,6 +73,7 @@ function toLegDto(l: {
   arrivalAirport: string;
   departureTime: unknown;
   landingTime: unknown;
+  localDepartureTime: unknown;
   hours: unknown;
   cycles: number;
   miles: number;
@@ -91,6 +93,7 @@ function toLegDto(l: {
     arrivalAirport: l.arrivalAirport,
     departureTime: l.departureTime !== null ? toNumber(l.departureTime) : null,
     landingTime: l.landingTime !== null ? toNumber(l.landingTime) : null,
+    localDepartureTime: l.localDepartureTime !== null ? toNumber(l.localDepartureTime) : null,
     hours: toNumber(l.hours),
     cycles: l.cycles,
     miles: l.miles,
