@@ -89,7 +89,14 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
   const ytdRange = getYtdRange(reportDate, fiscalYearStartMonth);
 
   const [allTime, ytd, priorFy, upcoming] = await Promise.all([
-    prisma.trip.aggregate({ where: { archived: false, isSimulator: false }, _sum: { hours: true, cycles: true } }),
+    // "Since purchase" must stop at today, same as YTD's upper bound --
+    // otherwise a future-dated trip with hours already filled in (e.g. an
+    // estimate entered ahead of time for a planned multi-leg trip) inflates
+    // the lifetime total for a flight that hasn't happened yet.
+    prisma.trip.aggregate({
+      where: { archived: false, isSimulator: false, date: { lt: ytdRange.end } },
+      _sum: { hours: true, cycles: true },
+    }),
     prisma.trip.aggregate({
       where: { archived: false, isSimulator: false, date: { gte: ytdRange.start, lt: ytdRange.end } },
       _sum: { hours: true, cycles: true },
