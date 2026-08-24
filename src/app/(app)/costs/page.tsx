@@ -4,7 +4,7 @@ import { CostsView } from "@/components/costs/costs-view";
 import { CostSummaryPanel } from "@/components/costs/cost-summary-panel";
 import { getCostEntries, getCostPerMetrics, getCostSummary } from "@/lib/costs";
 import { getCostCategories, getVendors } from "@/lib/settings";
-import { getMtdRange, getYtdRange } from "@/lib/date-ranges";
+import { getMtdRange, getFiscalYearRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 
 interface CostsPageProps {
@@ -28,7 +28,9 @@ export default async function CostsPage({ searchParams }: CostsPageProps) {
   } else if (params.range === "all") {
     range = undefined;
   } else {
-    range = getYtdRange(now, fiscalStartMonth);
+    // The whole fiscal year, not just year-to-date -- "This year" should
+    // include costs already entered for future dates too.
+    range = getFiscalYearRange(now, fiscalStartMonth);
   }
 
   const type = params.type === "FIXED" || params.type === "DIRECT" ? params.type : undefined;
