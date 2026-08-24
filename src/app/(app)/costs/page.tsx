@@ -4,7 +4,7 @@ import { CostsView } from "@/components/costs/costs-view";
 import { CostSummaryPanel } from "@/components/costs/cost-summary-panel";
 import { getCostEntries, getCostPerMetrics, getCostSummary } from "@/lib/costs";
 import { getCostCategories, getVendors } from "@/lib/settings";
-import { getMtdRange, getFiscalYearRange } from "@/lib/date-ranges";
+import { getMonthRange, getFiscalYearRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 
 interface CostsPageProps {
@@ -24,7 +24,9 @@ export default async function CostsPage({ searchParams }: CostsPageProps) {
       end: params.to ? new Date(new Date(params.to).getTime() + 86400000) : new Date(now.getTime() + 86400000),
     };
   } else if (params.range === "mtd") {
-    range = getMtdRange(now);
+    // The whole calendar month, not just month-to-date -- same reasoning as
+    // "This year" below: future-dated entries within the month should show.
+    range = getMonthRange(now.getUTCFullYear(), now.getUTCMonth());
   } else if (params.range === "all") {
     range = undefined;
   } else {
