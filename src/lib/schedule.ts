@@ -56,7 +56,9 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     const legs = t.legs;
     for (let i = 0; i < legs.length; i++) {
       const leg = legs[i];
-      const routeText = `${leg.departureAirport} → ${leg.arrivalAirport}`;
+      // A plain hyphen, not an arrow -- the PDF export's base font (Helvetica)
+      // doesn't have the arrow glyph and renders it as a stray apostrophe.
+      const routeText = `${leg.departureAirport} - ${leg.arrivalAirport}`;
       // The local departure time (as entered) is what shows here when set --
       // it's what a passenger/staff reading the Schedule actually cares
       // about, not the UTC time duty-day/currency math runs on.
@@ -95,7 +97,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
           tripItems.push({
             id: `${t.id}-stationary-${day.toISOString().slice(0, 10)}`,
             kind: "stationary",
-            title: `At ${leg.arrivalAirport}`,
+            title: leg.arrivalAirport,
             subtitle: null,
             startDate: day,
             endDate: day,
