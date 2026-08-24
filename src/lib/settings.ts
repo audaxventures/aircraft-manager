@@ -40,3 +40,7 @@ export async function getUsers() {
     select: { id: true, name: true, email: true, role: true, allowedPages: true, archived: true },
   });
 }
+
+export async function getHistoricalAnnualTotals() {
+  return prisma.historicalAnnualTotal.findMany({ orderBy: { year: "desc" } });
+}

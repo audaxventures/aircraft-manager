@@ -89,7 +89,7 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
   const priorFyStart = new Date(Date.UTC(fyStart.getUTCFullYear() - 1, fyStart.getUTCMonth(), 1));
   const ytdRange = getYtdRange(reportDate, fiscalYearStartMonth);
 
-  const [allTime, ytd, priorFy, upcoming] = await Promise.all([
+  const [allTime, ytd, priorFy, upcoming, historicalTotals] = await Promise.all([
     // "Since purchase" must stop at today, same as YTD's upper bound --
     // otherwise a future-dated trip with hours already filled in (e.g. an
     // estimate entered ahead of time for a planned multi-leg trip) inflates
@@ -105,10 +105,20 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
       take: 3,
       select: { date: true, legs: { orderBy: { legOrder: "desc" }, take: 1, select: { arrivalAirport: true } } },
     }),
+    prisma.historicalAnnualTotal.findMany(),
   ]);
 
-  const sincePurchaseHours = allTime.hours;
-  const sincePurchaseCycles = allTime.cycles;
+  // Whole-year totals entered in Settings for years before trip tracking
+  // began -- folded into the lifetime figure (every year on record) and, if
+  // one matches the prior fiscal year specifically, into that figure too.
+  const historicalHours = historicalTotals.reduce((sum, t) => sum + toNumber(t.hours), 0);
+  const historicalCycles = historicalTotals.reduce((sum, t) => sum + t.cycles, 0);
+  const priorFyEntry = historicalTotals.find((t) => t.year === priorFyStart.getUTCFullYear());
+
+  const sincePurchaseHours = allTime.hours + historicalHours;
+  const sincePurchaseCycles = allTime.cycles + historicalCycles;
+  const priorFyHours = priorFy.hours + (priorFyEntry ? toNumber(priorFyEntry.hours) : 0);
+  const priorFyCycles = priorFy.cycles + (priorFyEntry ? priorFyEntry.cycles : 0);
 
   return {
     purchaseHours,
@@ -121,8 +131,8 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
     ytdHours: ytd.hours,
     ytdCycles: ytd.cycles,
     priorFyLabel: `${formatDate(priorFyStart)} - ${formatDate(new Date(fyStart.getTime() - 1))}`,
-    priorFyHours: priorFy.hours,
-    priorFyCycles: priorFy.cycles,
+    priorFyHours,
+    priorFyCycles,
     upcomingTrips: upcoming.map((t) => ({ label: t.legs[0]?.arrivalAirport ?? "", date: t.date })),
   };
 }

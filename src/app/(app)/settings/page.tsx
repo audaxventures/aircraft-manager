@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AircraftForm } from "@/components/settings/aircraft-form";
+import { HistoricalTotalsManager } from "@/components/settings/historical-totals-manager";
 import { CostCategoriesManager } from "@/components/settings/cost-categories-manager";
 import { PilotsManager } from "@/components/settings/pilots-manager";
 import { VendorsManager } from "@/components/settings/vendors-manager";
@@ -13,6 +14,7 @@ import { getPrimaryAircraft } from "@/lib/aircraft";
 import {
   getCostCategories,
   getEventCategories,
+  getHistoricalAnnualTotals,
   getPilots,
   getRegulatorySettings,
   getUsers,
@@ -23,17 +25,19 @@ import { toNumber } from "@/lib/format";
 import { auth } from "@/auth";
 
 export default async function SettingsPage() {
-  const [aircraft, categories, pilots, vendors, eventCategories, regSettings, users, session, deletedItems] = await Promise.all([
-    getPrimaryAircraft(),
-    getCostCategories(true),
-    getPilots(true),
-    getVendors(true),
-    getEventCategories(true),
-    getRegulatorySettings(),
-    getUsers(),
-    auth(),
-    getRecentlyDeleted(),
-  ]);
+  const [aircraft, categories, pilots, vendors, eventCategories, regSettings, users, session, deletedItems, historicalTotals] =
+    await Promise.all([
+      getPrimaryAircraft(),
+      getCostCategories(true),
+      getPilots(true),
+      getVendors(true),
+      getEventCategories(true),
+      getRegulatorySettings(),
+      getUsers(),
+      auth(),
+      getRecentlyDeleted(),
+      getHistoricalAnnualTotals(),
+    ]);
 
   return (
     <div>
@@ -69,6 +73,9 @@ export default async function SettingsPage() {
                 purchaseTotalCycles: aircraft.purchaseTotalCycles,
               }
             }
+          />
+          <HistoricalTotalsManager
+            totals={historicalTotals.map((t) => ({ id: t.id, year: t.year, hours: toNumber(t.hours), cycles: t.cycles }))}
           />
         </TabsContent>
         <TabsContent value="categories">

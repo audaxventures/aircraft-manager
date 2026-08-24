@@ -45,6 +45,40 @@ export async function saveAircraft(input: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+const historicalAnnualTotalSchema = z.object({
+  id: z.string().optional(),
+  year: z.coerce.number().int().min(1900).max(2200),
+  hours: z.coerce.number().nonnegative(),
+  cycles: z.coerce.number().int().nonnegative(),
+});
+
+export async function saveHistoricalAnnualTotal(input: unknown): Promise<ActionResult> {
+  const parsed = historicalAnnualTotalSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+
+  const { id, ...data } = parsed.data;
+  try {
+    if (id) {
+      await prisma.historicalAnnualTotal.update({ where: { id }, data });
+    } else {
+      await prisma.historicalAnnualTotal.create({ data });
+    }
+  } catch {
+    return { ok: false, error: "A total for that year already exists." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/weekly-reports");
+  return { ok: true };
+}
+
+export async function deleteHistoricalAnnualTotal(id: string): Promise<ActionResult> {
+  await prisma.historicalAnnualTotal.delete({ where: { id } });
+  revalidatePath("/settings");
+  revalidatePath("/weekly-reports");
+  return { ok: true };
+}
+
 const costCategorySchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Name is required"),

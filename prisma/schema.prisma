@@ -54,6 +54,23 @@ model Aircraft {
   updatedAt            DateTime @updatedAt
 }
 
+// A whole calendar/fiscal year's hours and cycles, for years before trip
+// tracking began in this app -- distinct from Aircraft.purchaseTotalHours
+// (the odometer reading at the moment of purchase, printed verbatim on the
+// Weekly Status Report letterhead). Folded into the Weekly Report's
+// lifetime "Current Total"/"Since Purchase" figures, and into "Prior FY"
+// when the entry's year matches. Not used anywhere that needs monthly/daily
+// granularity (Dashboard, Reports monthly grid, YTD), since a lump annual
+// figure can't be meaningfully split further.
+model HistoricalAnnualTotal {
+  id        String   @id @default(cuid())
+  year      Int      @unique
+  hours     Decimal  @db.Decimal(8, 1)
+  cycles    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum CostType {
   FIXED
   DIRECT
