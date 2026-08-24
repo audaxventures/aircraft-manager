@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { toNumber } from "@/lib/format";
+import { getLegAggregate } from "@/lib/trips";
 
 export interface RegulatoryThresholds {
   maxFlightDutyHours: number;
@@ -113,11 +114,12 @@ export function evaluateDutyEntry(
 
 async function getRollingFlightHours(pilotId: string, asOfDate: Date, days: number): Promise<number> {
   const start = new Date(asOfDate.getTime() - days * 24 * 60 * 60 * 1000);
-  const agg = await prisma.trip.aggregate({
-    where: { archived: false, OR: [{ pilotId }, { secondPilotId: pilotId }], date: { gte: start, lte: asOfDate } },
-    _sum: { hours: true },
+  const agg = await getLegAggregate({
+    dateFilter: { gte: start, lte: asOfDate },
+    pilotId,
+    includeSimulator: true,
   });
-  return toNumber(agg._sum.hours);
+  return agg.hours;
 }
 
 export async function getRolling30DayFlightHours(pilotId: string, asOfDate: Date): Promise<number> {

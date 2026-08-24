@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { toNumber, formatDate } from "@/lib/format";
 import { getFiscalYearRange, getYtdRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
+import { getLegAggregate } from "@/lib/trips";
 
 export interface MaintenanceItem {
   description: string;
@@ -92,19 +93,12 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
     // "Since purchase" must stop at today, same as YTD's upper bound --
     // otherwise a future-dated trip with hours already filled in (e.g. an
     // estimate entered ahead of time for a planned multi-leg trip) inflates
-    // the lifetime total for a flight that hasn't happened yet.
-    prisma.trip.aggregate({
-      where: { archived: false, isSimulator: false, date: { lt: ytdRange.end } },
-      _sum: { hours: true, cycles: true },
-    }),
-    prisma.trip.aggregate({
-      where: { archived: false, isSimulator: false, date: { gte: ytdRange.start, lt: ytdRange.end } },
-      _sum: { hours: true, cycles: true },
-    }),
-    prisma.trip.aggregate({
-      where: { archived: false, isSimulator: false, date: { gte: priorFyStart, lt: fyStart } },
-      _sum: { hours: true, cycles: true },
-    }),
+    // the lifetime total for a flight that hasn't happened yet. Aggregated
+    // per-leg (not per-trip) so a multi-leg trip that straddles the boundary
+    // only counts the hours actually flown on legs on or before today.
+    getLegAggregate({ dateFilter: { lt: ytdRange.end } }),
+    getLegAggregate({ dateFilter: { gte: ytdRange.start, lt: ytdRange.end } }),
+    getLegAggregate({ dateFilter: { gte: priorFyStart, lt: fyStart } }),
     prisma.trip.findMany({
       where: { archived: false, date: { gt: reportDate } },
       orderBy: { date: "asc" },
@@ -113,8 +107,8 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
     }),
   ]);
 
-  const sincePurchaseHours = toNumber(allTime._sum.hours);
-  const sincePurchaseCycles = allTime._sum.cycles ?? 0;
+  const sincePurchaseHours = allTime.hours;
+  const sincePurchaseCycles = allTime.cycles;
 
   return {
     purchaseHours,
@@ -124,11 +118,11 @@ export async function getWeekOverviewStats(reportDate: Date): Promise<WeekOvervi
     sincePurchaseHours,
     sincePurchaseCycles,
     ytdLabel: `${formatDate(ytdRange.start)} - ${formatDate(reportDate)}`,
-    ytdHours: toNumber(ytd._sum.hours),
-    ytdCycles: ytd._sum.cycles ?? 0,
+    ytdHours: ytd.hours,
+    ytdCycles: ytd.cycles,
     priorFyLabel: `${formatDate(priorFyStart)} - ${formatDate(new Date(fyStart.getTime() - 1))}`,
-    priorFyHours: toNumber(priorFy._sum.hours),
-    priorFyCycles: priorFy._sum.cycles ?? 0,
+    priorFyHours: priorFy.hours,
+    priorFyCycles: priorFy.cycles,
     upcomingTrips: upcoming.map((t) => ({ label: t.legs[0]?.arrivalAirport ?? "", date: t.date })),
   };
 }

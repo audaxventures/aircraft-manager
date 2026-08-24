@@ -1,21 +1,48 @@
 import { prisma } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 
-// Real aircraft utilization only -- simulator sessions are excluded since
-// they burn no airframe time or fuel (they still show up in the Trips list
-// itself, just not in stats meant to represent the aircraft's flying).
-export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
-  const agg = await prisma.trip.aggregate({
-    where: { archived: false, isSimulator: false, ...(range ? { date: { gte: range.start, lt: range.end } } : {}) },
-    _sum: { hours: true, miles: true },
-    _count: true,
+/**
+ * Sums hours/cycles/miles from TripLeg rather than the parent Trip's own
+ * denormalized totals. A multi-leg trip's Trip.date/hours are aggregates
+ * across ALL its legs (e.g. an outbound leg on Dec 30 and a return leg on
+ * Jan 3) -- filtering by Trip.date and summing Trip.hours would misattribute
+ * the whole trip's hours to whichever period its FIRST leg falls in, even
+ * when other legs (and the hours flown on them) belong to a different
+ * period. Aggregating per-leg keeps every period's totals attributed to the
+ * days actually flown in it. dateFilter is passed straight through to
+ * Prisma so callers keep exact gte/lt/lte control over the boundary.
+ */
+export async function getLegAggregate(opts: {
+  dateFilter?: { gte?: Date; lt?: Date; lte?: Date };
+  pilotId?: string;
+  // Simulator sessions are excluded by default since they burn no airframe
+  // time or fuel; duty-day/currency/rolling-hour tracking wants them included.
+  includeSimulator?: boolean;
+} = {}): Promise<{ hours: number; cycles: number; miles: number; tripCount: number }> {
+  const legs = await prisma.tripLeg.findMany({
+    where: {
+      ...(opts.dateFilter ? { date: opts.dateFilter } : {}),
+      trip: {
+        archived: false,
+        ...(opts.includeSimulator ? {} : { isSimulator: false }),
+        ...(opts.pilotId ? { OR: [{ pilotId: opts.pilotId }, { secondPilotId: opts.pilotId }] } : {}),
+      },
+    },
+    select: { hours: true, cycles: true, miles: true, tripId: true },
   });
 
+  const round1 = (n: number) => Math.round(n * 10) / 10;
   return {
-    hours: toNumber(agg._sum.hours),
-    miles: agg._sum.miles ?? 0,
-    tripCount: agg._count,
+    hours: round1(legs.reduce((sum, l) => sum + toNumber(l.hours), 0)),
+    cycles: legs.reduce((sum, l) => sum + l.cycles, 0),
+    miles: legs.reduce((sum, l) => sum + l.miles, 0),
+    tripCount: new Set(legs.map((l) => l.tripId)).size,
   };
+}
+
+export async function getTripHoursAndMiles(range?: { start: Date; end: Date }) {
+  const agg = await getLegAggregate({ dateFilter: range ? { gte: range.start, lt: range.end } : undefined });
+  return { hours: agg.hours, miles: agg.miles, tripCount: agg.tripCount };
 }
 
 export interface TripLegDto {

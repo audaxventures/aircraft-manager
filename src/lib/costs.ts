@@ -183,7 +183,7 @@ export async function getMonthlySummaryGrid(
   const start = new Date(Date.UTC(year, 0, 1));
   const end = new Date(Date.UTC(year + 1, 0, 1));
 
-  const [entries, trips] = await Promise.all([
+  const [entries, legs] = await Promise.all([
     prisma.costEntry.findMany({
       where: {
         archived: false,
@@ -193,8 +193,11 @@ export async function getMonthlySummaryGrid(
       },
       select: { date: true, categoryId: true, amount: true },
     }),
-    prisma.trip.findMany({
-      where: { archived: false, isSimulator: false, date: { gte: start, lt: end } },
+    // Bucketed by leg date, not Trip.date -- Trip.date is just the earliest
+    // leg's date, so a multi-leg trip straddling two months would otherwise
+    // dump its entire total into whichever month it started in.
+    prisma.tripLeg.findMany({
+      where: { trip: { archived: false, isSimulator: false }, date: { gte: start, lt: end } },
       select: { date: true, hours: true, miles: true },
     }),
   ]);
@@ -221,10 +224,10 @@ export async function getMonthlySummaryGrid(
     rows[m].total += amount;
   }
 
-  for (const trip of trips) {
-    const m = trip.date.getUTCMonth();
-    rows[m].hours += toNumber(trip.hours);
-    rows[m].miles += trip.miles;
+  for (const leg of legs) {
+    const m = leg.date.getUTCMonth();
+    rows[m].hours += toNumber(leg.hours);
+    rows[m].miles += leg.miles;
   }
 
   const yearTotal: MonthlyGridRow = {
