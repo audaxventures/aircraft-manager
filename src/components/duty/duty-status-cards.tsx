@@ -76,7 +76,7 @@ function DutyStatusCards({
               >
                 <div className="flex items-start justify-between">
                   <div className="relative flex size-14 shrink-0 items-center justify-center">
-                    <Image src="/images/wings-icon.png" alt="" width={72} height={26} className="absolute opacity-80" />
+                    <Image src="/images/wings-icon.png" alt="" width={92} height={33} className="absolute opacity-80" />
                     <div
                       className={cn(
                         "relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold text-white shadow",

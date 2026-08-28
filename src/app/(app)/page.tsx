@@ -57,9 +57,9 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back, {firstName}</h1>
-        <div className="mt-2 mb-2 h-1 w-10 rounded-full bg-primary" />
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Welcome back, {firstName}</h1>
+        <div className="mt-3 mb-2 h-1 w-10 rounded-full bg-primary" />
+        <p className="text-base text-muted-foreground">
           Here&apos;s how {aircraft?.tailNumber ?? "C-FPFX"} operations are performing.
         </p>
       </div>

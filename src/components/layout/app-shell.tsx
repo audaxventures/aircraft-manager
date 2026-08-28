@@ -40,6 +40,7 @@ function AppShell({ tailNumber, children }: AppShellProps) {
             <Image src="/images/wings-icon.png" alt="" width={44} height={16} className="opacity-40" />
             <div className="h-px flex-1 bg-border" />
           </div>
+          <div className="mt-2 text-right text-xs text-muted-foreground">Built by Audax Ventures</div>
         </main>
       </div>
 
@@ -57,6 +58,7 @@ function SidebarPanel({ tailNumber, onNavigate }: { tailNumber: string; onNaviga
   return (
     <div className="relative flex h-full w-full flex-1 flex-col">
       <Image src="/images/sidebar-background.png" alt="" fill priority className="object-cover" />
+      <div className="absolute inset-0 bg-slate-950/40" />
       <div className="relative flex h-full flex-col">
         <SidebarBrand tailNumber={tailNumber} />
         <SidebarNav onNavigate={onNavigate} />
@@ -68,17 +70,15 @@ function SidebarPanel({ tailNumber, onNavigate }: { tailNumber: string; onNaviga
 
 function SidebarBrand({ tailNumber }: { tailNumber: string }) {
   return (
-    <div className="px-5 pt-6 pb-5">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
-          <Plane className="size-5" />
-        </div>
-        <div className="min-w-0">
-          <div className="truncate text-xl font-bold text-white">{tailNumber}</div>
-          <div className="text-xs font-semibold tracking-widest text-white/60">OPERATIONS</div>
-        </div>
+    <div className="flex flex-col items-center px-5 pt-6 pb-5 text-center">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
+        <Plane className="size-5" />
       </div>
-      <div className="mx-auto mt-4 h-px w-20 bg-white/15" />
+      <div className="mt-3 min-w-0">
+        <div className="truncate text-xl font-bold text-white">{tailNumber}</div>
+        <div className="text-xs font-semibold tracking-widest text-white/60">OPERATIONS</div>
+      </div>
+      <div className="mt-4 h-px w-20 bg-white/15" />
     </div>
   );
 }
