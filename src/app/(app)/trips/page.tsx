@@ -3,6 +3,7 @@ import { KpiCard } from "@/components/shared/kpi-card";
 import { LinkTabs } from "@/components/shared/link-tabs";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { TripsView } from "@/components/trips/trips-view";
+import { TripActions } from "@/components/trips/trip-actions";
 import { PassengerPicker } from "@/components/trips/passenger-picker";
 import { EmptyState } from "@/components/shared/empty-state";
 import { getTrips, getTripHoursAndMiles, getPassengerOptions, getPassengerHistory, getTripExportPresets } from "@/lib/trips";
@@ -10,7 +11,7 @@ import { getPilots } from "@/lib/settings";
 import { getMtdRange, getYtdRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 import { formatDate, formatHours, formatNumber } from "@/lib/format";
-import { Users, PlaneTakeoff } from "lucide-react";
+import { Users, PlaneTakeoff, Clock, Milestone } from "lucide-react";
 
 interface TripsPageProps {
   searchParams: Promise<{
@@ -58,13 +59,18 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
 
   return (
     <div>
-      <PageHeader title="Trips" description="Flight log, hours, and passenger history." icon={PlaneTakeoff} />
+      <PageHeader
+        title="Trips"
+        description="Flight log, hours, and passenger history."
+        icon={PlaneTakeoff}
+        action={<TripActions pilots={pilots} passengerOptions={passengerOptions} />}
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="YTD hours" value={formatHours(ytdFlying.hours)} />
-        <KpiCard label="MTD hours" value={formatHours(mtdFlying.hours)} />
-        <KpiCard label="YTD trips" value={ytdFlying.tripCount} />
-        <KpiCard label="YTD miles" value={formatNumber(ytdFlying.miles)} />
+        <KpiCard label="YTD hours" value={formatHours(ytdFlying.hours)} accent="blue" icon={Clock} />
+        <KpiCard label="MTD hours" value={formatHours(mtdFlying.hours)} accent="indigo" icon={Clock} />
+        <KpiCard label="YTD trips" value={ytdFlying.tripCount} accent="violet" icon={PlaneTakeoff} />
+        <KpiCard label="YTD miles" value={formatNumber(ytdFlying.miles)} accent="emerald" icon={Milestone} />
       </div>
 
       <LinkTabs

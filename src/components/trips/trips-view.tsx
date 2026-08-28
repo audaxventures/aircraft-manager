@@ -133,15 +133,13 @@ function TripsView({ trips, pilots, passengerOptions, exportPresets }: TripsView
             <TabsTrigger value="past">Past Trips</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex gap-2">
-          <TripExportPanel trips={filteredTrips} presets={exportPresets} />
-          <Button size="sm" onClick={openNew}>
-            <Plus /> Add trip
-          </Button>
-        </div>
+        <TripExportPanel trips={filteredTrips} presets={exportPresets} />
       </div>
 
       <DataTable
+        title="Trip Log"
+        description="Flight history and passenger manifests"
+        icon={PlaneTakeoff}
         columns={columns}
         data={filteredTrips}
         onRowClick={openEdit}
