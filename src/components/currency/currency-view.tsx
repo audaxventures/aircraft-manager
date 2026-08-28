@@ -105,6 +105,9 @@ function CurrencyView({ currencies: allCurrencies }: CurrencyViewProps) {
       </div>
 
       <DataTable
+        title="Currency Log"
+        description="Day, night, and instrument approach recency"
+        icon={BadgeCheck}
         columns={columns}
         data={currencies}
         onRowClick={setDetail}

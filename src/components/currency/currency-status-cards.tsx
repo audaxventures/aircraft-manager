@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AlertTriangle, CheckCircle2, Clock, EyeOff, Eye } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -8,6 +9,15 @@ import { useHiddenPilots } from "@/hooks/use-hidden-pilots";
 import { daysUntil, type PilotCurrency } from "@/lib/currency-shared";
 
 const EXPIRING_SOON_DAYS = 30;
+
+const AVATAR_COLORS = ["bg-blue-500", "bg-emerald-500", "bg-violet-500", "bg-amber-500", "bg-pink-500", "bg-teal-500"];
+
+function initialsFor(name: string) {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
 
 function statusFor(current: boolean, lapseDate: Date | null) {
   if (!lapseDate) return { label: "Not current", tone: "expired" as const };
@@ -55,33 +65,54 @@ function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
 
       {sorted.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((c) => {
+          {sorted.map((c, i) => {
             const day = statusFor(c.day.current, c.day.lapseDate);
             const night = statusFor(c.night.current, c.night.lapseDate);
             const instrumentApproaches = statusFor(c.instrumentApproaches.current, c.instrumentApproaches.lapseDate);
             const flagged = day.tone !== "ok" || night.tone !== "ok" || instrumentApproaches.tone !== "ok";
+            const accent = AVATAR_COLORS[i % AVATAR_COLORS.length];
 
             return (
-              <div key={c.pilotId} className={cn("rounded-lg border p-4", flagged ? "border-warning/40 bg-warning/5" : "bg-card")}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">{c.pilotName}</span>
-                  <div className="flex items-center gap-2">
-                    {flagged ? (
-                      <AlertTriangle className="size-4 text-warning-foreground" />
-                    ) : (
-                      <CheckCircle2 className="size-4 text-success" />
-                    )}
+              <div
+                key={c.pilotId}
+                className={cn("rounded-xl p-4 shadow-sm", flagged ? "border border-warning/40 bg-warning/5" : "border bg-card")}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="relative flex size-14 shrink-0 items-center justify-center">
+                    <Image src="/images/wings-icon.png" alt="" width={72} height={26} className="absolute opacity-80" />
+                    <div
+                      className={cn(
+                        "relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold text-white shadow",
+                        accent
+                      )}
+                    >
+                      {initialsFor(c.pilotName)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className={cn(
+                        "flex size-7 items-center justify-center rounded-full",
+                        flagged ? "bg-warning/15 text-warning-foreground" : "bg-success/10 text-success"
+                      )}
+                    >
+                      {flagged ? <AlertTriangle className="size-4" /> : <CheckCircle2 className="size-4" />}
+                    </div>
                     <button
                       type="button"
                       onClick={() => hide(c.pilotId)}
                       title="Hide this pilot's card"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                     >
                       <EyeOff className="size-3.5" />
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 space-y-2 text-sm">
+
+                <div className="mt-2 text-base font-bold text-foreground">{c.pilotName}</div>
+                <div className={cn("mt-1.5 mb-3 h-1 w-10 rounded-full", accent)} />
+
+                <div className="space-y-2 text-sm">
                   <CurrencyRow label="Day" status={day} lapseDate={c.day.lapseDate} />
                   <CurrencyRow label="Night" status={night} lapseDate={c.night.lapseDate} />
                   <CurrencyRow label="Instrument approaches" status={instrumentApproaches} lapseDate={c.instrumentApproaches.lapseDate} />

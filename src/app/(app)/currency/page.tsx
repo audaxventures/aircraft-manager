@@ -13,8 +13,8 @@ export default async function CurrencyPage() {
     <div>
       <PageHeader title="Currency" description="Pilot day and night takeoff/landing recency (CAR 401.05(2))." icon={BadgeCheck} />
 
-      <div className="mb-6 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
-        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
+        <AlertTriangle className="mt-0.5 size-5 shrink-0" />
         <p>
           Currently configured as {thresholds.dayTakeoffsRequired} day / {thresholds.nightTakeoffsRequired} night
           takeoffs and {thresholds.dayLandingsRequired} day / {thresholds.nightLandingsRequired} night landings
