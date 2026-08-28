@@ -35,13 +35,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         action={
           <div className="flex flex-wrap items-center gap-2">
             {vendors.length > 0 && <ReportsVendorFilter vendors={vendors} />}
-            <div className="flex items-center rounded-md border bg-card p-0.5">
+            <div className="flex items-center rounded-full border bg-card p-0.5">
               {(["CAD", "USD"] as const).map((c) => (
                 <Link
                   key={c}
                   href={`/reports?year=${year}&currency=${c}${vendorId ? `&vendor=${vendorId}` : ""}`}
                   className={cn(
-                    "rounded-sm px-2.5 py-1 text-sm font-medium transition-colors",
+                    "rounded-full px-2.5 py-1 text-sm font-medium transition-colors",
                     c === currency ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -49,13 +49,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 </Link>
               ))}
             </div>
-            <div className="flex items-center rounded-md border bg-card p-0.5">
+            <div className="flex items-center rounded-full border bg-card p-0.5">
               {years.map((y) => (
                 <Link
                   key={y}
                   href={`/reports?year=${y}&currency=${currency}${vendorId ? `&vendor=${vendorId}` : ""}`}
                   className={cn(
-                    "rounded-sm px-2.5 py-1 text-sm font-medium transition-colors",
+                    "rounded-full px-2.5 py-1 text-sm font-medium transition-colors",
                     y === year ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >

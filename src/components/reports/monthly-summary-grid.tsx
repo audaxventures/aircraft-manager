@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatHours, formatNumber } from "@/lib/format";
 import type { MonthlyGrid } from "@/lib/costs";
@@ -13,12 +15,29 @@ function metrics(row: { hours: number; miles: number; fixedTotal: number; direct
   };
 }
 
-function MonthlySummaryGrid({ grid }: { grid: MonthlyGrid }) {
+interface MonthlySummaryGridProps {
+  grid: MonthlyGrid;
+  title?: string;
+  description?: string;
+  icon?: LucideIcon;
+}
+
+function MonthlySummaryGrid({ grid, title, description, icon: Icon }: MonthlySummaryGridProps) {
   const fixedCategories = grid.categories.filter((c) => c.type === "FIXED");
   const directCategories = grid.categories.filter((c) => c.type === "DIRECT");
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="overflow-hidden rounded-lg border bg-card">
+      {title && (
+        <div className="flex items-center gap-3 bg-primary px-4 py-3.5 text-primary-foreground">
+          {Icon && <Icon className="size-5 shrink-0" />}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{title}</div>
+            {description && <div className="truncate text-xs text-primary-foreground/70">{description}</div>}
+          </div>
+        </div>
+      )}
+      <div className="overflow-x-auto">
       <table className="w-full min-w-[1400px] border-collapse text-sm">
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b">
@@ -117,6 +136,7 @@ function MonthlySummaryGrid({ grid }: { grid: MonthlyGrid }) {
           })()}
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

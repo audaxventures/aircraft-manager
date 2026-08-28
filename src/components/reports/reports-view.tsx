@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, FileBarChart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MonthlySummaryGrid } from "@/components/reports/monthly-summary-grid";
@@ -40,33 +40,29 @@ function ReportsView({ year, grid, currency, vendorId }: ReportsViewProps) {
   return (
     <div className="space-y-8">
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-foreground">
-            Monthly summary — {year} <span className="text-muted-foreground">({currency})</span>
-          </h2>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv}>
-              <Download /> CSV
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href={`/api/reports/monthly-summary/pdf?${pdfParams.toString()}`} target="_blank" rel="noreferrer">
-                <FileText /> PDF
-              </a>
-            </Button>
-          </div>
+        <div className="mb-3 flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Download /> CSV
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/reports/monthly-summary/pdf?${pdfParams.toString()}`} target="_blank" rel="noreferrer">
+              <FileText /> PDF
+            </a>
+          </Button>
         </div>
-        <MonthlySummaryGrid grid={grid} />
+        <MonthlySummaryGrid grid={grid} title="Monthly Summary" description={`${year} · ${currency}`} icon={FileBarChart} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-lg border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-medium text-foreground">Monthly trend</h2>
           <MonthlyTrendChart data={trendData} />
         </div>
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-lg border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-medium text-foreground">Cost by category — {year}</h2>
           <CategoryBreakdown
             categories={grid.categories.map((c) => ({ name: c.name, type: c.type, total: grid.yearTotal.byCategory[c.id] ?? 0 }))}
+            colorful
           />
         </div>
       </section>

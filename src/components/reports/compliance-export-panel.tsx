@@ -25,7 +25,7 @@ function ComplianceExportPanel({ pilots }: CompliancePanelProps) {
   if (pilotId !== "all") currencyParams.set("pilotId", pilotId);
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="rounded-lg border bg-card p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-medium text-foreground">Compliance exports</h2>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Select value={pilotId} onValueChange={setPilotId}>
