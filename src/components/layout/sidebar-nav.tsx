@@ -21,7 +21,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   });
 
   return (
-    <nav className="flex flex-1 flex-col gap-2 px-3">
+    <nav className="flex flex-1 flex-col gap-1 px-3">
       {visibleItems.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         const Icon = item.icon;

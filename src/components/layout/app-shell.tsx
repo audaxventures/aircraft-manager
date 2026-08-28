@@ -35,6 +35,11 @@ function AppShell({ tailNumber, children }: AppShellProps) {
 
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
+          <div className="mt-10 flex items-center gap-4">
+            <div className="h-px flex-1 bg-border" />
+            <Image src="/images/wings-icon.png" alt="" width={44} height={16} className="opacity-40" />
+            <div className="h-px flex-1 bg-border" />
+          </div>
         </main>
       </div>
 
