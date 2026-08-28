@@ -32,25 +32,33 @@ interface KpiCardProps {
   accent?: keyof typeof ACCENT_CLASSES;
   icon?: LucideIcon;
   className?: string;
+  orientation?: "vertical" | "horizontal";
 }
 
-function KpiCard({ label, value, sublabel, trend, accent, icon: Icon, className }: KpiCardProps) {
-  return (
+function KpiCard({ label, value, sublabel, trend, accent, icon: Icon, className, orientation = "vertical" }: KpiCardProps) {
+  const iconEl = Icon && (
     <div
-      className={cn(accent ? cn("rounded-xl p-5 shadow-sm", ACCENT_CLASSES[accent]) : "rounded-lg border bg-card p-4", className)}
-    >
-      {Icon && (
-        <div
-          className={cn(
-            "mb-3 flex size-11 items-center justify-center rounded-xl shadow-lg",
-            accent ? cn(ICON_CLASSES[accent], "text-white") : "bg-muted text-muted-foreground shadow-none"
-          )}
-        >
-          <Icon className="size-5" />
-        </div>
+      className={cn(
+        "flex size-11 shrink-0 items-center justify-center rounded-xl shadow-lg",
+        orientation === "vertical" && "mb-3",
+        accent ? cn(ICON_CLASSES[accent], "text-white") : "bg-muted text-muted-foreground shadow-none"
       )}
+    >
+      <Icon className="size-5" />
+    </div>
+  );
+
+  const textEl = (
+    <div className="min-w-0">
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
+      <div
+        className={cn(
+          "font-semibold tracking-tight text-foreground tabular-nums",
+          orientation === "horizontal" ? "mt-1 text-xl" : "mt-1.5 text-2xl"
+        )}
+      >
+        {value}
+      </div>
       {sublabel && <div className="mt-1 text-xs text-muted-foreground">{sublabel}</div>}
       {trend && (
         <div
@@ -64,6 +72,30 @@ function KpiCard({ label, value, sublabel, trend, accent, icon: Icon, className 
           {trend.label}
         </div>
       )}
+    </div>
+  );
+
+  if (orientation === "horizontal") {
+    return (
+      <div
+        className={cn(
+          accent ? cn("rounded-xl p-4 shadow-sm", ACCENT_CLASSES[accent]) : "rounded-lg border bg-card p-4",
+          "flex items-center gap-3",
+          className
+        )}
+      >
+        {iconEl}
+        {textEl}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(accent ? cn("rounded-xl p-5 shadow-sm", ACCENT_CLASSES[accent]) : "rounded-lg border bg-card p-4", className)}
+    >
+      {iconEl}
+      {textEl}
     </div>
   );
 }

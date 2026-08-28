@@ -67,10 +67,10 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="YTD hours" value={formatHours(ytdFlying.hours)} accent="blue" icon={Clock} />
-        <KpiCard label="MTD hours" value={formatHours(mtdFlying.hours)} accent="indigo" icon={Clock} />
-        <KpiCard label="YTD trips" value={ytdFlying.tripCount} accent="violet" icon={PlaneTakeoff} />
-        <KpiCard label="YTD miles" value={formatNumber(ytdFlying.miles)} accent="emerald" icon={Milestone} />
+        <KpiCard orientation="horizontal" label="YTD hours" value={formatHours(ytdFlying.hours)} accent="blue" icon={Clock} />
+        <KpiCard orientation="horizontal" label="MTD hours" value={formatHours(mtdFlying.hours)} accent="indigo" icon={Clock} />
+        <KpiCard orientation="horizontal" label="YTD trips" value={ytdFlying.tripCount} accent="violet" icon={PlaneTakeoff} />
+        <KpiCard orientation="horizontal" label="YTD miles" value={formatNumber(ytdFlying.miles)} accent="emerald" icon={Milestone} />
       </div>
 
       <LinkTabs
