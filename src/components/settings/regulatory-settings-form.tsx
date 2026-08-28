@@ -99,7 +99,7 @@ function RegulatorySettingsForm({ settings }: { settings: RegulatorySettings }) 
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-      <div className="flex gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+      <div className="flex gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
         <p>
           These figures reflect CARS Subpart 604 and CAR 401.05(2) as commonly applied at the time this tool was

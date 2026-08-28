@@ -25,7 +25,7 @@ function MaintenanceEditor({ items, onChange }: MaintenanceEditorProps) {
   }
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b bg-secondary/40 px-4 py-2 text-sm font-medium text-foreground">
         Maintenance Due List
         <Button type="button" variant="ghost" size="icon" className="size-6" onClick={addItem}>

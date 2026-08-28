@@ -45,6 +45,7 @@ function EventCategoriesManager({ categories }: { categories: EventCategory[] })
       <div className="mb-3 flex justify-end">
         <Button
           size="sm"
+          className="rounded-full"
           onClick={() => {
             setEditing(null);
             setOpen(true);
@@ -53,7 +54,7 @@ function EventCategoriesManager({ categories }: { categories: EventCategory[] })
           <Plus /> Add category
         </Button>
       </div>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <ul className="divide-y">
           {categories.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">

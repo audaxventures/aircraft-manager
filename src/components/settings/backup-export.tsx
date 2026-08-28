@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 function BackupExport() {
   return (
-    <div className="rounded-lg border bg-card p-5">
+    <div className="rounded-lg border bg-card p-5 shadow-sm">
       <h3 className="text-sm font-medium text-foreground">Full data export</h3>
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         Downloads every active record on the platform — trips, cost entries, duty logs, calendar events, weekly

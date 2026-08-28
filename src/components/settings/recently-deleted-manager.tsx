@@ -42,7 +42,7 @@ function RecentlyDeletedManager({ items }: { items: TrashItem[] }) {
         Deleted trips, costs, duty logs, calendar events, and weekly reports land here instead of being permanently
         erased. Restore anything deleted by mistake.
       </p>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <ul className="divide-y">
           {visible.map((item) => (
             <li key={`${item.kind}-${item.id}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">

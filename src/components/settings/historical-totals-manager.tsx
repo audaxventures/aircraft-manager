@@ -52,7 +52,7 @@ function HistoricalTotalsManager({ totals }: { totals: HistoricalAnnualTotal[] }
           </p>
         </div>
       </div>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <ul className="divide-y">
           {totals.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
@@ -80,7 +80,7 @@ function HistoricalTotalsManager({ totals }: { totals: HistoricalAnnualTotal[] }
           {totals.length === 0 && <li className="px-4 py-3 text-sm text-muted-foreground">No historical totals added</li>}
         </ul>
       </div>
-      <Button size="sm" variant="outline" className="mt-3" onClick={openNew}>
+      <Button size="sm" variant="outline" className="mt-3 rounded-full" onClick={openNew}>
         <Plus /> Add year
       </Button>
 

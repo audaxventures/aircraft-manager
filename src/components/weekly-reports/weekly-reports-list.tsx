@@ -24,13 +24,10 @@ function WeeklyReportsList({ reports }: WeeklyReportsListProps) {
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
-        <Button size="sm" onClick={() => router.push("/weekly-reports/new")}>
-          <Plus /> New report
-        </Button>
-      </div>
-
       <DataTable
+        title="Weekly Reports"
+        description="Client status reports on file"
+        icon={ClipboardList}
         columns={columns}
         data={reports}
         onRowClick={(r) => router.push(`/weekly-reports/${r.id}`)}

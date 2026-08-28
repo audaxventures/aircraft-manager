@@ -45,7 +45,7 @@ function CostCategoriesManager({ categories }: { categories: CostCategory[] }) {
   return (
     <div>
       <div className="mb-3 flex justify-end">
-        <Button size="sm" onClick={openNew}>
+        <Button size="sm" className="rounded-full" onClick={openNew}>
           <Plus /> Add category
         </Button>
       </div>
@@ -71,7 +71,7 @@ function CategoryGroup({
   onToggleArchive: (c: CostCategory) => void;
 }) {
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card shadow-sm">
       <div className="border-b px-4 py-2.5 text-xs font-medium text-muted-foreground">{title}</div>
       <ul className="divide-y">
         {items.map((c) => (

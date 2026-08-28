@@ -31,6 +31,7 @@ function VendorsManager({ vendors }: { vendors: Vendor[] }) {
       <div className="mb-3 flex justify-end">
         <Button
           size="sm"
+          className="rounded-full"
           onClick={() => {
             setEditing(null);
             setOpen(true);
@@ -39,7 +40,7 @@ function VendorsManager({ vendors }: { vendors: Vendor[] }) {
           <Plus /> Add vendor
         </Button>
       </div>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <ul className="divide-y">
           {vendors.map((v) => (
             <li key={v.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">

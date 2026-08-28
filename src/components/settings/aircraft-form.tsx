@@ -67,7 +67,7 @@ function AircraftForm({ aircraft }: AircraftFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-lg border bg-card p-5">
+    <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-lg border bg-card p-5 shadow-sm">
       <div className="space-y-1.5">
         <Label htmlFor="tailNumber">Tail number</Label>
         <Input id="tailNumber" value={tailNumber} onChange={(e) => setTailNumber(e.target.value)} placeholder="C-FPFX" required />

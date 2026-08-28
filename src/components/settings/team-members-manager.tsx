@@ -41,6 +41,7 @@ function TeamMembersManager({ members, currentUserId }: { members: TeamMember[];
       <div className="mb-3 flex justify-end">
         <Button
           size="sm"
+          className="rounded-full"
           onClick={() => {
             setEditing(null);
             setOpen(true);
@@ -49,7 +50,7 @@ function TeamMembersManager({ members, currentUserId }: { members: TeamMember[];
           <Plus /> Add team member
         </Button>
       </div>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <ul className="divide-y">
           {members.map((m) => (
             <li key={m.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">

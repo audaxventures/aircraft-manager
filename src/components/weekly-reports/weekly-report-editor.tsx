@@ -98,7 +98,7 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border bg-card p-5">
+      <div className="rounded-xl border bg-card p-5 shadow-sm">
         <h2 className="mb-4 text-center text-lg font-semibold text-foreground">Weekly Status Report</h2>
         <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           <div>
@@ -143,7 +143,7 @@ function WeeklyReportEditor({ reportId, initial, aircraftHeader }: WeeklyReportE
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b bg-secondary/40 px-4 py-2 text-sm font-medium text-foreground">
           1. Week Overview
           <Button type="button" variant="outline" size="sm" onClick={handleRegenerateOverview} disabled={regenerating}>

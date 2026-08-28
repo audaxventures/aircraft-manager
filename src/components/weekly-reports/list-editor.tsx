@@ -27,7 +27,7 @@ function ListEditor({ title, items, onChange, highlight, placeholder }: ListEdit
   }
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card shadow-sm">
       <div
         className={
           highlight
