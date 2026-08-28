@@ -53,15 +53,19 @@ export default async function DashboardPage() {
   const trendData: MonthlyTrendPoint[] = grid.rows.map((r) => ({ month: r.monthLabel, fixed: r.fixedTotal, direct: r.directTotal }));
 
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "there";
+  const today = new Intl.DateTimeFormat("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(now);
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Welcome back, {firstName}</h1>
-        <div className="mt-3 mb-2 h-1 w-10 rounded-full bg-primary" />
-        <p className="text-base text-muted-foreground">
-          Here&apos;s how {aircraft?.tailNumber ?? "C-FPFX"} operations are performing.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Welcome back, {firstName}</h1>
+          <div className="mt-3 mb-2 h-1 w-10 rounded-full bg-primary" />
+          <p className="text-base text-muted-foreground">
+            Here&apos;s how {aircraft?.tailNumber ?? "C-FPFX"} operations are performing.
+          </p>
+        </div>
+        <p className="mt-2 shrink-0 text-sm font-medium text-muted-foreground">{today}</p>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
