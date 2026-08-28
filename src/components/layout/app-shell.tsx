@@ -80,7 +80,7 @@ function SidebarBrand({ tailNumber }: { tailNumber: string }) {
           <div className="text-xs font-semibold tracking-widest text-white/60">OPERATIONS</div>
         </div>
       </div>
-      <div className="mt-4 h-px w-20 bg-white/15" />
+      <div className="mx-auto mt-4 h-px w-20 bg-white/15" />
     </div>
   );
 }
