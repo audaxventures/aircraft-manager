@@ -58,7 +58,7 @@ function LoginForm() {
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-11 pl-10"
+            className="h-12 rounded-xl pl-10"
           />
         </div>
       </div>
@@ -74,7 +74,7 @@ function LoginForm() {
             placeholder="Enter your passphrase"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="h-11 pr-10 pl-10"
+            className="h-12 rounded-xl pr-10 pl-10"
           />
           <button
             type="button"
@@ -82,12 +82,12 @@ function LoginForm() {
             aria-label={showPassword ? "Hide passphrase" : "Show passphrase"}
             className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
           </button>
         </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" className="h-11 w-full rounded-xl text-base font-semibold" disabled={loading}>
+      <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold" disabled={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </Button>
     </form>
@@ -96,14 +96,14 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-svh flex-col lg:grid lg:grid-cols-2">
+    <div className="flex min-h-svh flex-col lg:grid lg:grid-cols-[55%_45%]">
       <div className="relative h-72 shrink-0 overflow-hidden sm:h-96 lg:h-auto">
         <Image
           src="/images/login-background.png"
           alt=""
           fill
           priority
-          className="object-cover"
+          className="object-cover lg:object-[0%_50%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-slate-950/40" />
         <div className="relative flex h-full flex-col justify-end p-6 text-white sm:p-8 lg:p-12">
@@ -128,9 +128,9 @@ export default function LoginPage() {
 
       <div className="flex flex-1 items-center justify-center bg-background px-4 py-8 lg:py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center gap-3 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Plane className="size-6" />
+          <div className="mb-10 flex flex-col items-center gap-4 text-center">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+              <Plane className="size-7" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">C-FPFX Operations</h1>
             <p className="text-sm text-muted-foreground">Sign in to manage costs, trips, and compliance.</p>
