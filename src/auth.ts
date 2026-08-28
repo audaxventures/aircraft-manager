@@ -88,6 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     jwt: ({ token, user }) => {
       if (user) {
+        token.name = user.name;
         token.role = user.role;
         token.allowedPages = user.allowedPages;
       }
@@ -96,6 +97,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session: ({ session, token }) => {
       if (session.user) {
         session.user.id = token.sub ?? "";
+        session.user.name = token.name ?? session.user.name;
         session.user.role = token.role ?? "MEMBER";
         session.user.allowedPages = token.allowedPages ?? [];
       }
