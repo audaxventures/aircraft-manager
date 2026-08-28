@@ -64,7 +64,7 @@ function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
       )}
 
       {sorted.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {sorted.map((c, i) => {
             const day = statusFor(c.day.current, c.day.lapseDate);
             const night = statusFor(c.night.current, c.night.lapseDate);
