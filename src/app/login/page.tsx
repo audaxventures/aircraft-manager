@@ -140,7 +140,7 @@ export default function LoginPage() {
           </React.Suspense>
           <div className="mt-10 flex items-center gap-4">
             <div className="h-px flex-1 bg-border" />
-            <Plane className="size-4 rotate-45 text-muted-foreground/40" />
+            <Image src="/images/wings-icon.png" alt="" width={44} height={16} className="opacity-40" />
             <div className="h-px flex-1 bg-border" />
           </div>
           <p className="mt-4 text-center text-sm text-muted-foreground">A smarter way to manage your aircraft operation.</p>
