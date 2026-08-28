@@ -21,7 +21,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   });
 
   return (
-    <nav className="flex flex-1 flex-col gap-0.5 px-3">
+    <nav className="flex flex-1 flex-col gap-2 px-3">
       {visibleItems.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         const Icon = item.icon;
@@ -31,13 +31,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] font-medium transition-colors",
               active ? "bg-primary text-primary-foreground shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"
             )}
           >
-            <Icon className="size-4" />
+            <Icon className="size-5" />
             {item.label}
-            {active && <ChevronRight className="ml-auto size-3.5" />}
+            {active && <ChevronRight className="ml-auto size-4" />}
           </Link>
         );
       })}
