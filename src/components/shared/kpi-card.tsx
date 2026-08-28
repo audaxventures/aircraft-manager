@@ -3,21 +3,21 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACCENT_CLASSES = {
-  blue: "bg-blue-50 dark:bg-blue-950/30",
-  indigo: "bg-indigo-50 dark:bg-indigo-950/30",
-  violet: "bg-violet-50 dark:bg-violet-950/30",
-  amber: "bg-amber-50 dark:bg-amber-950/30",
-  teal: "bg-teal-50 dark:bg-teal-950/30",
-  emerald: "bg-emerald-50 dark:bg-emerald-950/30",
+  blue: "bg-gradient-to-br from-blue-50 to-blue-100/60 dark:from-blue-950/40 dark:to-blue-900/10",
+  indigo: "bg-gradient-to-br from-indigo-50 to-indigo-100/60 dark:from-indigo-950/40 dark:to-indigo-900/10",
+  violet: "bg-gradient-to-br from-violet-50 to-violet-100/60 dark:from-violet-950/40 dark:to-violet-900/10",
+  amber: "bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/40 dark:to-amber-900/10",
+  teal: "bg-gradient-to-br from-teal-50 to-teal-100/60 dark:from-teal-950/40 dark:to-teal-900/10",
+  emerald: "bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-950/40 dark:to-emerald-900/10",
 } as const;
 
 const ICON_CLASSES = {
-  blue: "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300",
-  indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300",
-  violet: "bg-violet-100 text-violet-600 dark:bg-violet-900/50 dark:text-violet-300",
-  amber: "bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300",
-  teal: "bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-300",
-  emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300",
+  blue: "bg-blue-500 shadow-blue-500/30",
+  indigo: "bg-indigo-500 shadow-indigo-500/30",
+  violet: "bg-violet-500 shadow-violet-500/30",
+  amber: "bg-amber-500 shadow-amber-500/30",
+  teal: "bg-teal-500 shadow-teal-500/30",
+  emerald: "bg-emerald-500 shadow-emerald-500/30",
 } as const;
 
 interface KpiCardProps {
@@ -36,12 +36,14 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sublabel, trend, accent, icon: Icon, className }: KpiCardProps) {
   return (
-    <div className={cn("rounded-lg border p-4", accent ? ACCENT_CLASSES[accent] : "bg-card", className)}>
+    <div
+      className={cn(accent ? cn("rounded-xl p-5 shadow-sm", ACCENT_CLASSES[accent]) : "rounded-lg border bg-card p-4", className)}
+    >
       {Icon && (
         <div
           className={cn(
-            "mb-3 flex size-10 items-center justify-center rounded-full",
-            accent ? ICON_CLASSES[accent] : "bg-muted text-muted-foreground"
+            "mb-3 flex size-11 items-center justify-center rounded-xl shadow-lg",
+            accent ? cn(ICON_CLASSES[accent], "text-white") : "bg-muted text-muted-foreground shadow-none"
           )}
         >
           <Icon className="size-5" />

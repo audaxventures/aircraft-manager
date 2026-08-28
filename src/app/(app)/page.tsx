@@ -1,5 +1,4 @@
-import Image from "next/image";
-import { Calendar, Wallet, Clock, PlaneTakeoff, Gauge, MapPin, Milestone } from "lucide-react";
+import { Wallet, Clock, PlaneTakeoff, Gauge, MapPin, Milestone } from "lucide-react";
 
 import { auth } from "@/auth";
 import { KpiCard } from "@/components/shared/kpi-card";
@@ -16,15 +15,6 @@ import { formatCurrency, formatHours, formatNumber } from "@/lib/format";
 
 function shiftYearsUtc(d: Date, deltaYears: number) {
   return new Date(Date.UTC(d.getUTCFullYear() + deltaYears, d.getUTCMonth(), d.getUTCDate()));
-}
-
-function formatRangeLabel(start: Date, end: Date) {
-  const lastDay = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-  const sameYear = start.getUTCFullYear() === lastDay.getUTCFullYear();
-  const base: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: "UTC" };
-  const startStr = new Intl.DateTimeFormat("en-US", sameYear ? base : { ...base, year: "numeric" }).format(start);
-  const endStr = new Intl.DateTimeFormat("en-US", { ...base, year: "numeric" }).format(lastDay);
-  return `${startStr} – ${endStr}`;
 }
 
 function trendFor(current: number, prior: number) {
@@ -65,24 +55,13 @@ export default async function DashboardPage() {
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] || "there";
 
   return (
-    <div className="relative isolate">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] overflow-hidden rounded-2xl">
-        <Image src="/images/dashboard-background.png" alt="" fill priority className="object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/40 to-background" />
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back, {firstName}</h1>
-          <div className="mt-2 mb-2 h-1 w-10 rounded-full bg-primary" />
-          <p className="text-sm text-muted-foreground">
-            Here&apos;s how {aircraft?.tailNumber ?? "C-FPFX"} operations are performing.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm shadow-sm">
-          <Calendar className="size-4 text-muted-foreground" />
-          {formatRangeLabel(ytdRange.start, ytdRange.end)}
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back, {firstName}</h1>
+        <div className="mt-2 mb-2 h-1 w-10 rounded-full bg-primary" />
+        <p className="text-sm text-muted-foreground">
+          Here&apos;s how {aircraft?.tailNumber ?? "C-FPFX"} operations are performing.
+        </p>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
