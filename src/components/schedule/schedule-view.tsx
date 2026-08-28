@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarPlus, PlaneTakeoff } from "lucide-react";
+import { CalendarPlus, PlaneTakeoff, CalendarDays } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/schedule/calendar-grid";
@@ -64,7 +64,15 @@ function ScheduleView({ year, month, items, categories, pilots }: ScheduleViewPr
         </div>
       </div>
 
-      <CalendarGrid year={year} month={month} items={items} onEventClick={openEventFromItem} />
+      <CalendarGrid
+        year={year}
+        month={month}
+        items={items}
+        onEventClick={openEventFromItem}
+        title="Calendar"
+        description="Trips, maintenance, and events for the month"
+        icon={CalendarDays}
+      />
 
       <EventForm
         open={eventFormOpen}

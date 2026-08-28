@@ -42,9 +42,9 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
         icon={CalendarDays}
         action={
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-md border bg-card p-0.5">
+            <div className="flex items-center rounded-full border bg-card p-0.5">
               <Link href={`/schedule?year=${prevYear}&month=${prevMonth}`}>
-                <Button variant="ghost" size="icon" className="size-7">
+                <Button variant="ghost" size="icon" className="size-7 rounded-full">
                   <ChevronLeft className="size-4" />
                 </Button>
               </Link>
@@ -52,7 +52,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
                 {MONTH_LABELS[month]} {year}
               </span>
               <Link href={`/schedule?year=${nextYear}&month=${nextMonth}`}>
-                <Button variant="ghost" size="icon" className="size-7">
+                <Button variant="ghost" size="icon" className="size-7 rounded-full">
                   <ChevronRight className="size-4" />
                 </Button>
               </Link>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { PlaneTakeoff } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
@@ -128,9 +129,12 @@ interface CalendarGridProps {
   month: number; // 0-indexed
   items: CalendarItemDto[];
   onEventClick: (item: CalendarItemDto) => void;
+  title?: string;
+  description?: string;
+  icon?: LucideIcon;
 }
 
-function CalendarGrid({ year, month, items, onEventClick }: CalendarGridProps) {
+function CalendarGrid({ year, month, items, onEventClick, title, description, icon: Icon }: CalendarGridProps) {
   const monthStart = new Date(Date.UTC(year, month, 1));
   const startWeekday = monthStart.getUTCDay();
   const days = Array.from({ length: 42 }, (_, i) => new Date(Date.UTC(year, month, 1 - startWeekday + i)));
@@ -138,6 +142,15 @@ function CalendarGrid({ year, month, items, onEventClick }: CalendarGridProps) {
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
+      {title && (
+        <div className="flex items-center gap-3 bg-primary px-4 py-3.5 text-primary-foreground">
+          {Icon && <Icon className="size-5 shrink-0" />}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{title}</div>
+            {description && <div className="truncate text-xs text-primary-foreground/70">{description}</div>}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-7 border-b bg-secondary/30">
         {WEEKDAYS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">

@@ -63,7 +63,7 @@ function SchedulePdfDialog({ currentYear, currentMonth }: SchedulePdfDialogProps
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => handleOpenChange(true)}>
+      <Button variant="outline" className="rounded-full" onClick={() => handleOpenChange(true)}>
         <FileText /> Export PDF
       </Button>
 
