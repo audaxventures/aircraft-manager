@@ -34,10 +34,25 @@ function CostSummaryPanel({ summary, metrics }: CostSummaryPanelProps) {
   return (
     <div className="mb-6 space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <KpiCard label="Grand total" value={grand.primary} sublabel={grand.sublabel} accent="blue" icon={Wallet} />
-        <KpiCard label="Fixed costs" value={fixed.primary} sublabel={fixed.sublabel} accent="indigo" icon={Building2} />
-        <KpiCard label="Direct / operating" value={direct.primary} sublabel={direct.sublabel} accent="violet" icon={Fuel} />
+        <KpiCard orientation="horizontal" label="Grand total" value={grand.primary} sublabel={grand.sublabel} accent="blue" icon={Wallet} />
         <KpiCard
+          orientation="horizontal"
+          label="Fixed costs"
+          value={fixed.primary}
+          sublabel={fixed.sublabel}
+          accent="indigo"
+          icon={Building2}
+        />
+        <KpiCard
+          orientation="horizontal"
+          label="Direct / operating"
+          value={direct.primary}
+          sublabel={direct.sublabel}
+          accent="violet"
+          icon={Fuel}
+        />
+        <KpiCard
+          orientation="horizontal"
           label="Total cost / hour"
           value={perHour.primary}
           sublabel={perHour.sublabel ?? `${formatHours(metrics.hours)} flown`}
@@ -45,6 +60,7 @@ function CostSummaryPanel({ summary, metrics }: CostSummaryPanelProps) {
           icon={Gauge}
         />
         <KpiCard
+          orientation="horizontal"
           label="Total cost / mile"
           value={perMile.primary}
           sublabel={perMile.sublabel ?? `${formatNumber(metrics.miles)} mi flown`}
