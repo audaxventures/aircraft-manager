@@ -37,7 +37,7 @@ function LoginForm() {
     });
     setLoading(false);
     if (result?.error) {
-      setError("Incorrect email or passphrase.");
+      setError("Incorrect email or password.");
       return;
     }
     router.push(searchParams.get("callbackUrl") ?? "/");
@@ -63,7 +63,7 @@ function LoginForm() {
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">Passphrase</Label>
+        <Label htmlFor="password">Password</Label>
         <div className="relative">
           <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -71,7 +71,7 @@ function LoginForm() {
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             required
-            placeholder="Enter your passphrase"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="h-12 rounded-xl pr-10 pl-10"
@@ -79,7 +79,7 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Hide passphrase" : "Show passphrase"}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
