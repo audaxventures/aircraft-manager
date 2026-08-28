@@ -78,11 +78,11 @@ function CurrencyStatusCards({ currencies }: { currencies: PilotCurrency[] }) {
                 className={cn("rounded-xl p-4 shadow-sm", flagged ? "border border-warning/40 bg-warning/5" : "border bg-card")}
               >
                 <div className="flex items-start justify-between">
-                  <div className="relative flex size-14 shrink-0 items-center justify-center">
-                    <Image src="/images/wings-icon.png" alt="" width={92} height={33} className="absolute opacity-80" />
+                  <div className="relative flex size-20 shrink-0 items-center justify-center">
+                    <Image src="/images/wings-icon.png" alt="" width={140} height={50} className="absolute opacity-80" />
                     <div
                       className={cn(
-                        "relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold text-white shadow",
+                        "relative z-10 flex size-8 items-center justify-center rounded-full text-sm font-bold text-white shadow",
                         accent
                       )}
                     >
