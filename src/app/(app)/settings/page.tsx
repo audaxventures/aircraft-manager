@@ -1,3 +1,5 @@
+import { Settings as SettingsIcon } from "lucide-react";
+
 import { PageHeader } from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AircraftForm } from "@/components/settings/aircraft-form";
@@ -44,6 +46,7 @@ export default async function SettingsPage() {
       <PageHeader
         title="Settings"
         description="Aircraft, cost categories, vendors, pilots, event categories, and regulatory thresholds."
+        icon={SettingsIcon}
       />
       <Tabs defaultValue="aircraft">
         <TabsList>

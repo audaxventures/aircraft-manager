@@ -11,6 +11,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,6 +25,11 @@ interface DataTableProps<TData, TValue> {
   pageSize?: number;
   initialSorting?: SortingState;
   className?: string;
+  // Optional dark header bar above the table, for pages that want the table
+  // to read as its own titled section rather than a bare grid.
+  title?: string;
+  description?: string;
+  icon?: LucideIcon;
 }
 
 function DataTable<TData, TValue>({
@@ -34,6 +40,9 @@ function DataTable<TData, TValue>({
   pageSize = 25,
   initialSorting = [],
   className,
+  title,
+  description,
+  icon: Icon,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting);
 
@@ -57,7 +66,16 @@ function DataTable<TData, TValue>({
   const showPagination = pageCount > 1;
 
   return (
-    <div className={cn("rounded-lg border bg-card", className)}>
+    <div className={cn("overflow-hidden rounded-lg border bg-card", className)}>
+      {title && (
+        <div className="flex items-center gap-3 bg-primary px-4 py-3.5 text-primary-foreground">
+          {Icon && <Icon className="size-5 shrink-0" />}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{title}</div>
+            {description && <div className="truncate text-xs text-primary-foreground/70">{description}</div>}
+          </div>
+        </div>
+      )}
       <div className="max-h-[70vh] overflow-y-auto">
         <Table>
           <TableHeader>

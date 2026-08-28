@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ClipboardList } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { WeeklyReportEditor } from "@/components/weekly-reports/weekly-report-editor";
@@ -17,7 +18,7 @@ export default async function WeeklyReportPage({ params }: WeeklyReportPageProps
 
   return (
     <div>
-      <PageHeader title="Weekly report" description={formatDate(report.reportDate)} />
+      <PageHeader title="Weekly report" description={formatDate(report.reportDate)} icon={ClipboardList} />
       <WeeklyReportEditor
         reportId={report.id}
         aircraftHeader={{

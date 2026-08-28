@@ -1,3 +1,5 @@
+import { ClipboardList } from "lucide-react";
+
 import { PageHeader } from "@/components/shared/page-header";
 import { WeeklyReportEditor } from "@/components/weekly-reports/weekly-report-editor";
 import { getWeekOverviewStats, buildOverviewDraft, getMaintenanceCandidates, getPreviousWeeklyReport } from "@/lib/weekly-reports";
@@ -24,7 +26,7 @@ export default async function NewWeeklyReportPage() {
 
   return (
     <div>
-      <PageHeader title="New weekly report" description="Auto-filled from current data — edit anything before saving." />
+      <PageHeader title="New weekly report" description="Auto-filled from current data — edit anything before saving." icon={ClipboardList} />
       <WeeklyReportEditor
         aircraftHeader={{
           tailNumber: aircraft?.tailNumber ?? "",

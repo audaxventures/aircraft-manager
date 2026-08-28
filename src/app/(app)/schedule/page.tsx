@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       <PageHeader
         title="Schedule"
         description="Trips, maintenance downtime, and pilot time away in one calendar."
+        icon={CalendarDays}
         action={
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-md border bg-card p-0.5">

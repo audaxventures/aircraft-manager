@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BadgeCheck } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { CurrencyStatusCards } from "@/components/currency/currency-status-cards";
@@ -11,7 +11,7 @@ export default async function CurrencyPage() {
 
   return (
     <div>
-      <PageHeader title="Currency" description="Pilot day and night takeoff/landing recency (CAR 401.05(2))." />
+      <PageHeader title="Currency" description="Pilot day and night takeoff/landing recency (CAR 401.05(2))." icon={BadgeCheck} />
 
       <div className="mb-6 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />

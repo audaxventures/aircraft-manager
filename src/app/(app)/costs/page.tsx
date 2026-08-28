@@ -1,3 +1,5 @@
+import { Receipt } from "lucide-react";
+
 import { PageHeader } from "@/components/shared/page-header";
 import { CostFilters } from "@/components/costs/cost-filters";
 import { CostsView } from "@/components/costs/costs-view";
@@ -51,7 +53,7 @@ export default async function CostsPage({ searchParams }: CostsPageProps) {
 
   return (
     <div>
-      <PageHeader title="Costs" description="Fixed and direct operating costs for C-FPFX." />
+      <PageHeader title="Costs" description="Fixed and direct operating costs for C-FPFX." icon={Receipt} />
 
       <CostSummaryPanel summary={summary} metrics={metrics} />
 

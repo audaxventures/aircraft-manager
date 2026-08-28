@@ -2,30 +2,17 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Download, Plus, Timer } from "lucide-react";
+import { Plus, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DutyLogForm, type PilotOption, type DutyLogFormValue } from "@/components/duty/duty-log-form";
+import { EXTENSION_LABELS } from "@/components/duty/duty-log-shared";
 import { formatDate, formatHours } from "@/lib/format";
 import { dateToDecimalHour, formatDecimalHour } from "@/lib/flight-time";
-import { toCsv, downloadCsv } from "@/lib/csv";
 import type { DutyDayLogDto } from "@/lib/duty";
-
-function formatUtcDecimalTime(d: Date) {
-  return `${formatDecimalHour(dateToDecimalHour(d))} UTC`;
-}
-
-// "30day"/"rest" just describe why the routine 14->15 hr allowance applies —
-// that's the default state for nearly every entry, not a notable action taken.
-// Only split-duty and unforeseen circumstances are opt-in extensions worth
-// flagging, so those are the only two with a real label here.
-const EXTENSION_LABELS: Partial<Record<DutyDayLogDto["extensionReason"], string>> = {
-  split: "Split-duty",
-  unforeseen: "Unforeseen circumstances",
-};
 
 interface DutyLogViewProps {
   logs: DutyDayLogDto[];
@@ -59,30 +46,6 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
       notes: log.notes ?? "",
     });
     setFormOpen(true);
-  }
-
-  function exportCsv() {
-    const csv = toCsv(logs, [
-      { header: "Date", accessor: (l) => formatDate(l.date) },
-      { header: "Pilot", accessor: (l) => l.pilotName },
-      { header: "Duty type", accessor: (l) => (l.dutyType === "ADMIN" ? "Admin" : "Flight") },
-      { header: "Report time", accessor: (l) => formatUtcDecimalTime(l.reportTime) },
-      { header: "Duty end time", accessor: (l) => formatUtcDecimalTime(l.dutyEndTime) },
-      { header: "Flight duty time (hrs)", accessor: (l) => l.flightDutyHours.toFixed(1) },
-      { header: "Rest before (hrs)", accessor: (l) => l.restPeriodBeforeHours.toFixed(1) },
-      { header: "30-day flight time (hrs)", accessor: (l) => l.rolling30DayHours.toFixed(1) },
-      { header: "90-day flight time (hrs)", accessor: (l) => l.rolling90DayHours.toFixed(1) },
-      { header: "12-month flight time (hrs)", accessor: (l) => l.rolling12MonthHours.toFixed(1) },
-      { header: "Applicable limit (hrs)", accessor: (l) => l.effectiveLimitHours.toFixed(1) },
-      { header: "Pass/Fail", accessor: (l) => (l.withinLimit ? "PASS" : "FAIL") },
-      { header: "Extension applied", accessor: (l) => EXTENSION_LABELS[l.extensionReason] ?? "—" },
-      { header: "Unforeseen circumstances", accessor: (l) => (l.unforeseenCircumstancesApplied ? "Yes" : "No") },
-      { header: "Unforeseen circumstances note", accessor: (l) => l.unforeseenCircumstancesNote },
-      { header: "Signed by", accessor: (l) => l.unforeseenSignedByName },
-      { header: "Signed at", accessor: (l) => (l.unforeseenSignedAt ? l.unforeseenSignedAt.toISOString() : "") },
-      { header: "Notes", accessor: (l) => l.notes },
-    ]);
-    downloadCsv(`duty-days-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
   const columns: ColumnDef<DutyDayLogDto>[] = [
@@ -131,16 +94,10 @@ function DutyLogView({ logs, pilots }: DutyLogViewProps) {
 
   return (
     <div>
-      <div className="mb-3 flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={exportCsv} disabled={logs.length === 0}>
-          <Download /> Export CSV
-        </Button>
-        <Button size="sm" onClick={openNew}>
-          <Plus /> Add duty log
-        </Button>
-      </div>
-
       <DataTable
+        title="Duty Log"
+        description="Recent flight duty time records"
+        icon={Timer}
         columns={columns}
         data={logs}
         onRowClick={openEdit}

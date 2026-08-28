@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileBarChart } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { ReportsView } from "@/components/reports/reports-view";
@@ -30,6 +31,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <PageHeader
         title="Reports"
         description="Monthly summary, trends, and exports."
+        icon={FileBarChart}
         action={
           <div className="flex flex-wrap items-center gap-2">
             {vendors.length > 0 && <ReportsVendorFilter vendors={vendors} />}

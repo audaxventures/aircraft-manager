@@ -10,7 +10,7 @@ import { getPilots } from "@/lib/settings";
 import { getMtdRange, getYtdRange } from "@/lib/date-ranges";
 import { getPrimaryAircraft } from "@/lib/aircraft";
 import { formatDate, formatHours, formatNumber } from "@/lib/format";
-import { Users } from "lucide-react";
+import { Users, PlaneTakeoff } from "lucide-react";
 
 interface TripsPageProps {
   searchParams: Promise<{
@@ -58,7 +58,7 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
 
   return (
     <div>
-      <PageHeader title="Trips" description="Flight log, hours, and passenger history." />
+      <PageHeader title="Trips" description="Flight log, hours, and passenger history." icon={PlaneTakeoff} />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard label="YTD hours" value={formatHours(ytdFlying.hours)} />
