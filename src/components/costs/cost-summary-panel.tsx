@@ -1,3 +1,5 @@
+import { Wallet, Building2, Fuel, Gauge, MapPin } from "lucide-react";
+
 import { KpiCard } from "@/components/shared/kpi-card";
 import { formatCurrency, formatHours, formatNumber } from "@/lib/format";
 import type { CostPerMetrics, CostSummary } from "@/lib/costs";
@@ -32,11 +34,23 @@ function CostSummaryPanel({ summary, metrics }: CostSummaryPanelProps) {
   return (
     <div className="mb-6 space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <KpiCard label="Grand total" value={grand.primary} sublabel={grand.sublabel} />
-        <KpiCard label="Fixed costs" value={fixed.primary} sublabel={fixed.sublabel} />
-        <KpiCard label="Direct / operating" value={direct.primary} sublabel={direct.sublabel} />
-        <KpiCard label="Total cost / hour" value={perHour.primary} sublabel={perHour.sublabel ?? `${formatHours(metrics.hours)} flown`} />
-        <KpiCard label="Total cost / mile" value={perMile.primary} sublabel={perMile.sublabel ?? `${formatNumber(metrics.miles)} mi flown`} />
+        <KpiCard label="Grand total" value={grand.primary} sublabel={grand.sublabel} accent="blue" icon={Wallet} />
+        <KpiCard label="Fixed costs" value={fixed.primary} sublabel={fixed.sublabel} accent="indigo" icon={Building2} />
+        <KpiCard label="Direct / operating" value={direct.primary} sublabel={direct.sublabel} accent="violet" icon={Fuel} />
+        <KpiCard
+          label="Total cost / hour"
+          value={perHour.primary}
+          sublabel={perHour.sublabel ?? `${formatHours(metrics.hours)} flown`}
+          accent="amber"
+          icon={Gauge}
+        />
+        <KpiCard
+          label="Total cost / mile"
+          value={perMile.primary}
+          sublabel={perMile.sublabel ?? `${formatNumber(metrics.miles)} mi flown`}
+          accent="teal"
+          icon={MapPin}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -57,7 +71,7 @@ function CategoryGroup({
   categories: CostSummary["byCategory"];
 }) {
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-4 py-2.5">
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
         <span className="text-sm font-semibold tabular-nums text-foreground">

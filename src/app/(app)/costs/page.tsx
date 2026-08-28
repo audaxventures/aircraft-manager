@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { CostFilters } from "@/components/costs/cost-filters";
 import { CostsView } from "@/components/costs/costs-view";
 import { CostSummaryPanel } from "@/components/costs/cost-summary-panel";
+import { CostActions } from "@/components/costs/cost-actions";
 import { getCostEntries, getCostPerMetrics, getCostSummary } from "@/lib/costs";
 import { getCostCategories, getVendors } from "@/lib/settings";
 import { getMonthRange, getFiscalYearRange } from "@/lib/date-ranges";
@@ -53,7 +54,12 @@ export default async function CostsPage({ searchParams }: CostsPageProps) {
 
   return (
     <div>
-      <PageHeader title="Costs" description="Fixed and direct operating costs for C-FPFX." icon={Receipt} />
+      <PageHeader
+        title="Costs"
+        description="Fixed and direct operating costs for C-FPFX."
+        icon={Receipt}
+        action={<CostActions categories={categories} vendors={vendors} />}
+      />
 
       <CostSummaryPanel summary={summary} metrics={metrics} />
 

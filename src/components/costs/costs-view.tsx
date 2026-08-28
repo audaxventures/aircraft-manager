@@ -150,12 +150,12 @@ function CostsView({ entries, categories, vendors, exportFilters }: CostsViewPro
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button size="sm" onClick={openNew}>
-          <Plus /> Add cost
-        </Button>
       </div>
 
       <DataTable
+        title="Cost Log"
+        description="Every fixed and direct cost entry"
+        icon={Receipt}
         columns={columns}
         data={entries}
         onRowClick={openEdit}
