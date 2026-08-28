@@ -70,13 +70,15 @@ function SidebarPanel({ tailNumber, onNavigate }: { tailNumber: string; onNaviga
 
 function SidebarBrand({ tailNumber }: { tailNumber: string }) {
   return (
-    <div className="flex flex-col items-center px-5 pt-6 pb-5 text-center">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
-        <Plane className="size-5" />
-      </div>
-      <div className="mt-3 min-w-0">
-        <div className="truncate text-xl font-bold text-white">{tailNumber}</div>
-        <div className="text-xs font-semibold tracking-widest text-white/60">OPERATIONS</div>
+    <div className="flex flex-col px-5 pt-6 pb-5">
+      <div className="flex items-center gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
+          <Plane className="size-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-xl font-bold text-white">{tailNumber}</div>
+          <div className="text-xs font-semibold tracking-widest text-white/60">OPERATIONS</div>
+        </div>
       </div>
       <div className="mt-4 h-px w-20 bg-white/15" />
     </div>
