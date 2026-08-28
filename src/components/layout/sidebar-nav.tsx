@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-items";
@@ -30,14 +31,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+              "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+              active ? "bg-primary text-primary-foreground shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"
             )}
           >
             <Icon className="size-4" />
             {item.label}
+            {active && <ChevronRight className="ml-auto size-3.5" />}
           </Link>
         );
       })}

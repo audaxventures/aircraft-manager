@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Menu, Plane, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -17,12 +18,10 @@ function AppShell({ tailNumber, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
-    <div className="flex min-h-svh w-full">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-        <SidebarBrand tailNumber={tailNumber} />
-        <SidebarNav />
-        <SidebarFooter />
+    <div className="flex min-h-svh w-full bg-background">
+      {/* Desktop sidebar — floating card, pinned in place while the page scrolls */}
+      <aside className="sticky top-4 my-4 ml-4 hidden h-[calc(100svh-2rem)] w-64 shrink-0 overflow-hidden rounded-3xl shadow-xl md:flex">
+        <SidebarPanel tailNumber={tailNumber} />
       </aside>
 
       {/* Mobile top bar */}
@@ -41,33 +40,47 @@ function AppShell({ tailNumber, children }: AppShellProps) {
 
       {/* Mobile nav drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-64 gap-0 border-sidebar-border bg-sidebar p-0 sm:max-w-64">
-          <SidebarBrand tailNumber={tailNumber} />
-          <SidebarNav onNavigate={() => setMobileOpen(false)} />
-          <SidebarFooter />
+        <SheetContent side="left" className="w-64 gap-0 border-transparent bg-transparent p-0 sm:max-w-64">
+          <SidebarPanel tailNumber={tailNumber} onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
     </div>
   );
 }
 
+function SidebarPanel({ tailNumber, onNavigate }: { tailNumber: string; onNavigate?: () => void }) {
+  return (
+    <div className="relative flex h-full w-full flex-1 flex-col">
+      <Image src="/images/sidebar-background.png" alt="" fill priority className="object-cover" />
+      <div className="relative flex h-full flex-col">
+        <SidebarBrand tailNumber={tailNumber} />
+        <SidebarNav onNavigate={onNavigate} />
+        <SidebarFooter />
+      </div>
+    </div>
+  );
+}
+
 function SidebarBrand({ tailNumber }: { tailNumber: string }) {
   return (
-    <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4">
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        <Plane className="size-4" />
+    <div className="flex items-center gap-2.5 px-5 py-5">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
+        <Plane className="size-5" />
       </div>
-      <span className="truncate text-sm font-semibold text-sidebar-foreground">{tailNumber}</span>
+      <div className="min-w-0">
+        <div className="truncate text-base font-bold text-white">{tailNumber}</div>
+        <div className="text-[10px] font-semibold tracking-widest text-white/60">OPERATIONS</div>
+      </div>
     </div>
   );
 }
 
 function SidebarFooter() {
   return (
-    <div className="border-t border-sidebar-border p-3">
+    <div className="p-3">
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
-        className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
       >
         <LogOut className="size-4" />
         Sign out

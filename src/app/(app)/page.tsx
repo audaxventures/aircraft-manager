@@ -38,12 +38,21 @@ export default async function DashboardPage() {
           label="YTD total cost"
           value={formatCurrency(metrics.total.CAD, { noDecimals: true })}
           sublabel={metrics.total.USD !== 0 ? `${formatCurrency(metrics.total.USD, { noDecimals: true })} USD` : undefined}
+          accent="blue"
         />
-        <KpiCard label="YTD hours flown" value={formatHours(metrics.hours)} />
-        <KpiCard label="Trips (YTD)" value={flying.tripCount} />
-        <KpiCard label="Total cost / hour" value={metrics.totalCostPerHour.CAD !== null ? formatCurrency(metrics.totalCostPerHour.CAD) : "—"} />
-        <KpiCard label="Total cost / mile" value={metrics.totalCostPerMile.CAD !== null ? formatCurrency(metrics.totalCostPerMile.CAD) : "—"} />
-        <KpiCard label="YTD miles" value={formatNumber(metrics.miles)} />
+        <KpiCard label="YTD hours flown" value={formatHours(metrics.hours)} accent="indigo" />
+        <KpiCard label="Trips (YTD)" value={flying.tripCount} accent="violet" />
+        <KpiCard
+          label="Total cost / hour"
+          value={metrics.totalCostPerHour.CAD !== null ? formatCurrency(metrics.totalCostPerHour.CAD) : "—"}
+          accent="amber"
+        />
+        <KpiCard
+          label="Total cost / mile"
+          value={metrics.totalCostPerMile.CAD !== null ? formatCurrency(metrics.totalCostPerMile.CAD) : "—"}
+          accent="teal"
+        />
+        <KpiCard label="YTD miles" value={formatNumber(metrics.miles)} accent="emerald" />
       </div>
 
       <DashboardStatusLinks dutyStatuses={dutyStatuses} currencies={currencies} />
