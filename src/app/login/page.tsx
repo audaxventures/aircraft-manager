@@ -97,13 +97,13 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="flex min-h-svh flex-col lg:grid lg:grid-cols-[55%_45%]">
-      <div className="relative h-72 shrink-0 overflow-hidden sm:h-96 lg:h-auto">
+      <div className="relative order-2 aspect-[4/5] shrink-0 overflow-hidden lg:order-1 lg:aspect-auto lg:h-auto">
         <Image
           src="/images/login-background.png"
           alt=""
           fill
           priority
-          className="object-cover lg:object-[0%_50%]"
+          className="object-cover object-[8%_50%] lg:object-[0%_50%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-slate-950/40" />
         <div className="relative flex h-full flex-col justify-end p-6 text-white sm:p-8 lg:p-12">
@@ -126,7 +126,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center bg-background px-4 py-8 lg:py-12">
+      <div className="order-1 flex flex-1 items-center justify-center bg-background px-4 py-8 lg:order-2 lg:py-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 flex flex-col items-center gap-4 text-center">
             <div className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
