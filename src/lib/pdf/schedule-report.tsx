@@ -68,9 +68,12 @@ function buildWeeks(year: number, month: number): Date[][] {
   return weeks;
 }
 
+// Line count a day needs: one per item, plus one for a trip leg's crew line.
 function itemsOnDay(items: CalendarItemDto[], day: Date): number {
   const t = day.getTime();
-  return items.filter((it) => it.startDate.getTime() <= t && it.endDate.getTime() >= t).length;
+  return items
+    .filter((it) => it.startDate.getTime() <= t && it.endDate.getTime() >= t)
+    .reduce((lines, it) => lines + (it.crew ? 2 : 1), 0);
 }
 
 /**
@@ -160,16 +163,22 @@ function ScheduleReport({ aircraftTailNumber, months, categoryLegend }: Schedule
                       {dayItems.map((item) => (
                         <View key={item.id} style={[styles.itemRow, { marginBottom: 2 * scale }]} wrap={false}>
                           {item.kind !== "stationary" && <View style={[itemDotStyle, { backgroundColor: item.color }]} />}
-                          <Text
-                            style={[
-                              styles.itemText,
-                              itemTextStyle,
-                              item.kind === "stationary" ? { fontFamily: "Helvetica-Oblique", color: "#737373" } : {},
-                            ]}
-                            hyphenationCallback={(word) => [word]}
-                          >
-                            {item.title}
-                          </Text>
+                          <View style={styles.itemText}>
+                            <Text
+                              style={[
+                                itemTextStyle,
+                                item.kind === "stationary" ? { fontFamily: "Helvetica-Oblique", color: "#737373" } : {},
+                              ]}
+                              hyphenationCallback={(word) => [word]}
+                            >
+                              {item.title}
+                            </Text>
+                            {item.crew && (
+                              <Text style={[itemTextStyle, { fontSize: 7 * scale, color: "#525252" }]} hyphenationCallback={(word) => [word]}>
+                                {item.crew}
+                              </Text>
+                            )}
+                          </View>
                         </View>
                       ))}
                     </View>

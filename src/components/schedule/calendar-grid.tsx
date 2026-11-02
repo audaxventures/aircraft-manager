@@ -52,15 +52,18 @@ function ItemPill({
   return (
     <Link
       href="/trips"
-      title={`${item.title} — view or complete in Trips`}
+      title={`${item.title}${item.crew ? `\nCrew: ${item.crew}` : ""}\nView or complete in Trips`}
       className={cn(
-        "flex items-center gap-1 truncate rounded",
+        "block rounded",
         padding,
         item.tripStatus === "PLANNED" ? "border border-dashed border-foreground/40 text-foreground" : "bg-foreground text-background"
       )}
     >
-      <PlaneTakeoff className="size-2.5 shrink-0" />
-      <span className="truncate">{item.title}</span>
+      <span className="flex items-center gap-1">
+        <PlaneTakeoff className="size-2.5 shrink-0" />
+        <span className="truncate">{item.title}</span>
+      </span>
+      {item.crew && <span className="block truncate pl-3.5 text-[10px] opacity-75">{item.crew}</span>}
     </Link>
   );
 }

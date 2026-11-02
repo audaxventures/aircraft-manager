@@ -14,6 +14,9 @@ export interface CalendarItemDto {
   categoryId: string | null;
   pilotId: string | null;
   pilotName: string | null;
+  // Who's flying a trip leg (PIC, then SIC), e.g. "Jane Smith / John Doe".
+  // Null for events/stationary days, or a trip with no pilots assigned yet.
+  crew: string | null;
   notes: string | null;
   tripStatus: "PLANNED" | "COMPLETED" | null;
 }
@@ -41,7 +44,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
         date: { lt: end },
         OR: [{ endDate: { gte: start } }, { endDate: null, date: { gte: start } }],
       },
-      include: { pilot: true, legs: { orderBy: { legOrder: "asc" } } },
+      include: { pilot: true, secondPilot: true, legs: { orderBy: { legOrder: "asc" } } },
       orderBy: { date: "asc" },
     }),
     prisma.calendarEvent.findMany({
@@ -54,6 +57,8 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
   const tripItems: CalendarItemDto[] = [];
   for (const t of trips) {
     const legs = t.legs;
+    const crewNames = [t.pilot?.name, t.secondPilot?.name].filter((n): n is string => !!n);
+    const crew = crewNames.length > 0 ? crewNames.join(" / ") : null;
     for (let i = 0; i < legs.length; i++) {
       const leg = legs[i];
       // A plain hyphen, not an arrow -- the PDF export's base font (Helvetica)
@@ -83,6 +88,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
         categoryId: null,
         pilotId: t.pilotId,
         pilotName: t.pilot?.name ?? null,
+        crew,
         notes: t.notes,
         tripStatus: t.status,
       });
@@ -106,6 +112,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
             categoryId: null,
             pilotId: t.pilotId,
             pilotName: t.pilot?.name ?? null,
+            crew: null,
             notes: null,
             tripStatus: t.status,
           });
@@ -126,6 +133,7 @@ export async function getCalendarMonth(year: number, month: number): Promise<Cal
     categoryId: e.categoryId,
     pilotId: e.pilotId,
     pilotName: e.pilot?.name ?? null,
+    crew: null,
     notes: e.notes,
     tripStatus: null,
   }));
